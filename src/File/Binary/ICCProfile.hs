@@ -4,7 +4,7 @@ module File.Binary.ICCProfile (ICCP, getElement, tags, tag_signature, short) whe
 
 import File.Binary
 import File.Binary.Instances ()
-import File.Binary.Instances.BigEndian ()
+import File.Binary.Instances.BigEndian (BitsInt)
 import Control.Arrow
 import Data.List
 
@@ -37,10 +37,20 @@ ICCP deriving Show
 2: create_second
 4: "acsp"
 ((), Just 4){String}: target_platform
-4: flags
+2: profile_flags
+-- 2: icc_profile_flags
+14{BitsInt}: other_icc_profile_flags
+{Bool}: is_embeded
+{Bool}: only_embeded
 4: device_manufacturer
 4: device_model
-8: attributes
+4: device_attributes
+-- 4: icc_device_attributes
+28{BitsInt}: other_icc_device_attributes
+{Bool}: device_not_color
+{Bool}: device_nega
+{Bool}: device_no_tsuya
+{Bool}: device_touka
 4: rendering_intent
 4: illuminant_value_X
 4: illuminant_value_Y
