@@ -1,12 +1,25 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies, FlexibleInstances #-}
 
-module File.Binary.ICCProfile (ICCP, getElement, tags, tag_signature, short) where
+module File.Binary.ICCProfile (ICCP, readICCP, tags, tag_signature, short) where
 
 import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian (BitsInt)
 import Control.Arrow
 import Data.List
+
+type ICCP_Data = (ICCP, [Element])
+
+readICCP :: (Monad m, Functor m, Binary b) => b -> m ICCP_Data
+readICCP bin = do
+	(ret, _) <- fromBinary () bin
+	elems <- mapM (($ bin) . getElement') $ tags ret
+	return (ret, elems)
+
+getElement' :: (Monad m, Functor m, Binary b) => Tag -> b -> m Element
+getElement' t@(Tag tn _ _) str = do
+	(d, _) <- getData t str
+	return $ edata tn d
 
 class Short a where
 	short :: a -> String
@@ -56,7 +69,7 @@ ICCP deriving Show
 4: illuminant_value_Y
 4: illuminant_value_Z
 ((), Just 4){String}: profile_creator
-44: 0
+44{Integer}: 0
 4: tag_count
 ((), Just tag_count){[Tag]}: tags
 
@@ -71,11 +84,6 @@ Tag deriving Show
 4: tag_element_size
 
 |]
-
-getElement :: Tag -> String -> Element
-getElement t@(Tag tn _ _) str = let
-	Right (d, _) = getData t str in
-	edata tn d
 
 edata :: String -> Data -> Element
 edata = (,)
