@@ -1,12 +1,18 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies, FlexibleInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module File.Binary.ICCProfile (ICCP, readICCP, tags, tag_signature, short) where
+module File.Binary.ICCProfile (
+	ICCP(..), readICCP, writeICCP,
+	tags, tag_signature, short, paddings, sizes
+) where
 
 import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian (BitsInt)
 import Control.Arrow
+import Data.Monoid
 import Data.List
+import Data.Time
 
 type ICCP_Data = (ICCP, [Element])
 
@@ -15,6 +21,26 @@ readICCP bin = do
 	(ret, _) <- fromBinary () bin
 	elems <- mapM (($ bin) . getElement') $ tags ret
 	return (ret, elems)
+
+-- writeICCP :: (Monad m, Functor m, Binary b) => ICCP_Data -> m b
+-- writeICCP :: ICCP_Data -> IO String
+writeICCP :: (Monad m, Functor m) => ICCP_Data -> m String
+writeICCP (ret, elems) = do
+	let pads = paddings (tags ret) ++ [0]
+	bin <- toBinary () ret
+	bins <- mapM (toBinary (error "bad values") . snd) elems
+	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
+	return $ mconcat $ bin : bins'
+
+paddings :: [Tag] -> [Int]
+paddings [_] = []
+paddings (t0 : t1 : ts) =
+	tag_data_offset t1 - tag_data_offset t0 - tag_element_size t0 :
+	paddings (t1 : ts)
+
+sizes :: [Tag] -> [Int]
+sizes [] = []
+sizes (t : ts) = tag_element_size t : sizes ts
 
 getElement' :: (Monad m, Functor m, Binary b) => Tag -> b -> m Element
 getElement' t@(Tag tn _ _) str = do
@@ -42,36 +68,74 @@ ICCP deriving Show
 ((), Just 4){String}: profile_device_class
 ((), Just 4){String}: color_space_of_data
 ((), Just 4){String}: profile_connection_space
-2: create_year
-2: create_month
-2: create_day
-2: create_hour
-2: create_minuite
-2: create_second
+{UTCTime}: create_time
 4: "acsp"
 ((), Just 4){String}: target_platform
 2: profile_flags
--- 2: icc_profile_flags
 14{BitsInt}: 0
 {Bool}: is_embeded
 {Bool}: only_embeded
 4: device_manufacturer
 4: device_model
 4: device_attributes
--- 4: icc_device_attributes
 28{BitsInt}: 0
 {Bool}: device_not_color
 {Bool}: device_nega
 {Bool}: device_matte
 {Bool}: device_trans
 4: rendering_intent
-4: illuminant_value_X
-4: illuminant_value_Y
-4: illuminant_value_Z
+{XYZ}: illuminant_value
 ((), Just 4){String}: profile_creator
-44{Integer}: 0
+((), Just 16){String}: profile_identifier
+28{Integer}: 0
 4: tag_count
 ((), Just tag_count){[Tag]}: tags
+
+|]
+
+[binary|
+
+XYZ deriving Show
+
+4: xyz_X
+4: xyz_Y
+4: xyz_Z
+
+|]
+
+instance Field UTCTime where
+	type FieldArgument UTCTime = ()
+	fromBinary () = fmap (first timeToUTCTime) . fromBinary ()
+	toBinary () = toBinary () . utcTimeToTime
+
+timeToUTCTime :: Time -> UTCTime
+timeToUTCTime t = UTCTime (fromGregorian (fromIntegral y) mon d) $
+	timeOfDayToTime (TimeOfDay h m $ fromIntegral s)
+	where
+	y = create_year t
+	mon = create_month t
+	d = create_day t
+	h = create_hour t
+	m = create_minuite t
+	s = create_second t
+
+utcTimeToTime :: UTCTime -> Time
+utcTimeToTime (UTCTime day time) =
+	Time (fromIntegral y) mon d h m (floor s)
+	where
+	(y, mon, d) = toGregorian day
+	TimeOfDay h m s = timeToTimeOfDay time
+
+[binary|
+
+Time deriving Show
+
+2: create_year
+2: create_month
+2: create_day
+2: create_hour
+2: create_minuite
+2: create_second
 
 |]
 
@@ -150,7 +214,7 @@ instance Field Elem where
 	fromBinary ("text", size) =
 		fmap (first ElemText) . fromBinary size
 	fromBinary ("desc", size) =
-		fmap (first ElemText) . fromBinary size
+		fmap (first ElemDesc) . fromBinary size
 	fromBinary ("mluc", size) =
 		fmap (first ElemMluc) . fromBinary size
 	fromBinary ("mmod", size) =
@@ -160,9 +224,21 @@ instance Field Elem where
 	fromBinary ("vcgt", size) =
 		fmap (first ElemVCGT) . fromBinary size
 	fromBinary ("ndin", size) =
-		fmap (first ElemNDIN) . fromBinary size
+--		fmap (first ElemNDIN) . fromBinary size
+		fmap (first $ ElemData "ndin") . fromBinary ((), Just size)
 	fromBinary (typ, size) =
 		fmap (first $ ElemData typ) . fromBinary ((), Just size)
+	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
+	toBinary (_, size) (ElemCurv dat) = toBinary size dat
+	toBinary (_, size) (ElemChad dat) = toBinary size dat
+	toBinary (_, size) (ElemText dat) = toBinary size dat
+	toBinary (_, size) (ElemDesc dat) = toBinary size dat
+	toBinary (_, size) (ElemMluc dat) = toBinary size dat
+	toBinary (_, size) (ElemMmod dat) = toBinary size dat
+	toBinary (_, size) (ElemPara dat) = toBinary size dat
+	toBinary (_, size) (ElemVCGT dat) = toBinary size dat
+	toBinary (_, size) (ElemNDIN dat) = toBinary size dat
+	toBinary (_, size) (ElemData _ dat) = toBinary ((), Just size) dat
 
 [binary|
 
@@ -188,9 +264,10 @@ XYZ2 deriving Show
 arg :: Int
 
 4: 0
-4: xyz_X
-4: xyz_Y
-4: xyz_Z
+{XYZ}: xyz
+-- 4: xyz_X
+-- 4: xyz_Y
+-- 4: xyz_Z
 
 |]
 
@@ -199,6 +276,8 @@ arg :: Int
 Desc deriving Show
 
 arg :: Int
+
+((), Just arg){String}: body_desc
 
 |]
 
@@ -246,7 +325,7 @@ arg :: Int
 4: num_MLUC2
 4: 12
 ((), Just num_MLUC2){[MLUC_RECORD2]}: record_MLUC2
-((), Just (arg - 12 * num_MLUC2 - 16)){String}: body_MLUC2
+((), Just (arg - 12 * num_MLUC2 - 12)){String}: body_MLUC2
 
 |]
 
@@ -280,7 +359,7 @@ MMOD2
 
 arg :: Int
 
-((), Just (arg - 4)){String}: body_MMOD2
+((), Just arg){String}: body_MMOD2
 
 |]
 
@@ -328,7 +407,7 @@ arg :: Int
 2: hoge_VCGT2
 2: hage_VCGT2
 2: hige_VCGT2
-(2, Just ((arg - 18) `div` 2)){[Int]}: body_VCGT2
+(2, Just ((arg - 14) `div` 2)){[Int]}: body_VCGT2
 
 |]
 
