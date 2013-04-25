@@ -1,0 +1,34 @@
+build-type:	Simple
+cabal-version:	>= 1.8
+
+name:		iccp-file
+version:	0.0.1
+stability:	Experimental
+author:		Yoshikuni Jujo <PAF01143@nifty.ne.jp>
+maintainer:	Yoshikuni Jujo <PAF01143@nifty.ne.jp>
+homepage:	https://skami.iocikun.jp/haskell/packages/iccp-file
+
+license:	BSD3
+license-file:	LICENSE
+
+category:	File
+synopsis:	read/write icc profile file
+description:
+
+    It's just experimental version now.
+
+source-repository	head
+    type:	git
+    location:	git://github.com/YoshikuniJujo/iccp-file.git
+
+source-repository	this
+    type:	git
+    location:	git://github.com/YoshikuniJujo/iccp-file.git
+    tag:	0.0.1
+
+library
+    hs-source-dirs:	src
+    exposed-modules:	File.Binary.ICCProfile
+    other-modules:
+    build-depends:	base > 3 && < 5, binary-file
+    ghc-options:	-Wall
