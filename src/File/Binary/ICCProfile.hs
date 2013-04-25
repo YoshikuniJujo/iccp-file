@@ -39,24 +39,24 @@ ICCP deriving Show
 ((), Just 4){String}: target_platform
 2: profile_flags
 -- 2: icc_profile_flags
-14{BitsInt}: other_icc_profile_flags
+14{BitsInt}: 0
 {Bool}: is_embeded
 {Bool}: only_embeded
 4: device_manufacturer
 4: device_model
 4: device_attributes
 -- 4: icc_device_attributes
-28{BitsInt}: other_icc_device_attributes
+28{BitsInt}: 0
 {Bool}: device_not_color
 {Bool}: device_nega
-{Bool}: device_no_tsuya
-{Bool}: device_touka
+{Bool}: device_matte
+{Bool}: device_trans
 4: rendering_intent
 4: illuminant_value_X
 4: illuminant_value_Y
 4: illuminant_value_Z
 ((), Just 4){String}: profile_creator
-((), Just 44){String}: reserved
+44: 0
 4: tag_count
 ((), Just tag_count){[Tag]}: tags
 
