@@ -2,8 +2,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module File.Binary.ICCProfile (
-	ICCP(..), readICCP, writeICCP,
-	tags, tag_signature, short, paddings, sizes
+	ICCP(..), Tag(..), readICCP, writeICCP,
+	tags, tag_signature, short, paddings, sizes,
+	duplicate, fromElems
 ) where
 
 import File.Binary
@@ -28,15 +29,40 @@ writeICCP :: (Monad m, Functor m) => ICCP_Data -> m String
 writeICCP (ret, elems) = do
 	let pads = paddings (tags ret) ++ [0]
 	bin <- toBinary () ret
-	bins <- mapM (toBinary (error "bad values") . snd) elems
-	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
+	let	dups = duplicate [] (tags ret)
+	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
+--	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
+	let	bins' = zipWith addPadding bins pads
 	return $ mconcat $ bin : bins'
+
+fromElems :: (Monad m, Functor m) => [Element] -> m [String]
+fromElems elems = do
+	mapM (toBinary undefined . snd) elems
+
+addPadding d p
+	| p >= 0 = d `mappend` replicate p '\0'
+	| otherwise = take (length d + p) d
 
 paddings :: [Tag] -> [Int]
 paddings [_] = []
 paddings (t0 : t1 : ts) =
 	tag_data_offset t1 - tag_data_offset t0 - tag_element_size t0 :
 	paddings (t1 : ts)
+
+deleteIndexes :: [Int] -> [a] -> [a]
+deleteIndexes [] xs = xs
+deleteIndexes (n : ns) xs =
+	take n xs ++ deleteIndexes (map (subtract (n + 1)) ns) (drop (n + 1) xs)
+
+duplicate :: [Tag] -> [Tag] -> [Int]
+duplicate _ [] = []
+duplicate pre (t : post)
+	| or $ map (sameOffsetSize t) pre = length pre : duplicate (t : pre) post
+	| otherwise = duplicate (t : pre) post
+
+sameOffsetSize :: Tag -> Tag -> Bool
+sameOffsetSize (Tag _ offset1 size1) (Tag _ offset2 size2) =
+	offset1 == offset2 && size1 == size2
 
 sizes :: [Tag] -> [Int]
 sizes [] = []
@@ -403,11 +429,15 @@ VCGT2
 
 arg :: Int
 
-8: 0
+8{Integer}: 0
 2: hoge_VCGT2
 2: hage_VCGT2
 2: hige_VCGT2
-(2, Just ((arg - 14) `div` 2)){[Int]}: body_VCGT2
+(1, Just (arg - 14)){[Int]}: body_VCGT2
+-- (2, Just (arg `div` 2 - 7)){[Int]}: body_VCGT2
+-- {Int}: some
+-- (arg - ((arg `div` 2) * 2)): some
+-- 1: 0
 
 |]
 

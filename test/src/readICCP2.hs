@@ -23,16 +23,21 @@ main = do
 	let Just bin = writeICCP (ret, dats) :: Maybe String
 --	print (bin :: String)
 --	print =<< writeICCP (ret, dats)
+	writeBinaryFile (fpout ++ "add_1") . (++ "\0") =<<
+		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
 	writeBinaryFile fpout =<<
 		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
---	putStrLn $ take 1000 $ drop 500 $ show bin
---	putStrLn $ take 1000 $ drop 500 $ show cnt
+	putStrLn $ take 1000 $ drop 6000 $ show cnt
+	putStrLn $ take 1000 $ drop 6000 $ show bin
 --	putStrLn $ take 1000 $ drop 29100 $ show cnt
 --	putStrLn $ take 1000 $ drop 29100 $ show bin
 --	putStrLn $ take 1000 $ drop 30000 $ show cnt
 --	putStrLn $ take 1000 $ drop 30000 $ show bin
-{-
 	print $ paddings $ tags ret
+	print $ duplicate [] $ tags ret
+	print $ map tag_element_size $ tags ret
+	print $ map length =<< fromElems dats
+{-
 	print $ sizes $ tags ret
 	print $ sum $ sizes $ tags ret
 	print $ profile_size ret - sum (sizes $ tags ret)
