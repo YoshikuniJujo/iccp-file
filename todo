@@ -1,0 +1,2 @@
+1. UTCTime をそのまま Field の instance にしているが、本当は newtype で
+	くくってからのほうが望ましい。あとでやること

@@ -3,3 +3,109 @@
 128 + 4 + タグ数 * 12 を基準とする。
 その後のデータは全部くっつけてしまい、基準値と前のデータのバイト数の合計を
 足した offset を持つこととなる。
+
+2013.04.26 Fri.
+
+共通要求事項
+profileDescriptionTag
+copyrightTag
+mediaWhitePointTag
+chromaticAdaptationTag
+
+colorimetricIntentImageStateTag
+
+入力プロファイル
+
+成分 LUT 型入力プロファイル
+AToB0Tag
+	AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+	DToB0Tag, DToB1Tag, DToB2Tag, DToB3Tag
+	BToD0Tag, BToD1Tag, BToD2Tag, BToD3Tag
+	gamutTag
+
+成分行列型入力プロファイル
+redMatrixColumnTag
+greenMatrixColumnTag
+bluMatrixColumnTag
+redTRCTag
+greenTRCTag
+blueTRCTag
+	AToB0Tag, AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+	gmutTag
+
+白黒入力プロファイル
+grayTRCTag
+	AToB0Tag, AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+
+表示装置プロファイル
+
+成分 LUT 型表示装置プロファイル
+AToB0Tag
+BToA0Tag
+	AToB1Tag, AToB2Tag
+	BToA1Tag, BToA2Tag
+	DToB0Tag, DToB1Tag, DToB2Tag, DToB3Tag
+	BToD0Tag, BToD1Tag, BToD2Tag, BToD3Tag
+	gamutTag
+
+成分行列型表示プロファイル
+redMatrixColumnTag
+greenMatrixColumnTag
+blueMatrixColumnTag
+redTRCTag
+greenTRCTag
+blueTRCTag
+	AToB0Tag, AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+	gamutTag
+
+白黒型表示装置プロファイル
+grayTRCTag
+	AToB0Tag, AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+
+出力プロファイル
+
+成分 LUT 型出力プロファイル
+AToB0Tag
+AToB1Tag
+AToB2Tag
+BToA0Tag
+BToA1Tag
+BToA2Tag
+gamutTag
+colorantTableTag
+	DToB0Tag, DToB1Tag, DToB2Tag, DToB3Tag
+	BToD0Tag, BToD1Tag, BToD2Tag, BToD3Tag
+
+白黒型出力プロファイル
+grayTRCTag
+	AToB0Tag, AToB1Tag, AToB2Tag
+	BToA0Tag, BToA1Tag, BToA2Tag
+
+装置連結プロファイル
+profileDescriptionTag
+copyrightTag
+profileSequenceDescTag
+AToB0Tag
+colorantTableTag
+colorantTableOutTag
+
+色空間プロファイル
+BToA0Tag
+AToB0Tag
+	AToB1Tag, AToB2Tag
+	BToA1Tag, BToA2Tag
+	DToB0Tag, DToB1Tag, DToB2Tag, DToB3Tag
+	BToD0Tag, BToD1Tag, BToD2Tag, BToD3Tag
+	gamutTag
+
+抽象プロファイル
+AToB0Tag
+	DToB0Tag
+
+命名色プロファイル
+namedColor2Tag

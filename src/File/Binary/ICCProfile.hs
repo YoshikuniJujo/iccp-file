@@ -199,7 +199,8 @@ Data
 arg :: Int
 
 ((), Just 4){String}: data_type
-(data_type, arg - 4){Elem}: data_body
+4: 0
+(data_type, arg - 8){Elem}: data_body
 
 |]
 
@@ -278,8 +279,7 @@ Text2
 
 arg :: Int
 
-4: 0
-((), Just (arg - 4)){String}: text
+((), Just arg){String}: text
 
 |]
 
@@ -295,7 +295,6 @@ XYZ2 deriving Show
 
 arg :: Int
 
-4: 0
 {XYZ}: xyz
 -- 4: xyz_X
 -- 4: xyz_Y
@@ -319,7 +318,6 @@ Curv2 deriving Show
 
 arg :: Int
 
-4: 0
 4: num_curv
 (2, Just num_curv){[Int]}: body_curv
 
@@ -334,7 +332,6 @@ CHAD2 deriving Show
 
 arg :: Int
 
-4: 0
 4: chad2_a0
 4: chad2_a1
 4: chad2_a2
@@ -353,11 +350,10 @@ MLUC2
 
 arg :: Int
 
-4: 0
 4: num_MLUC2
 4: 12
 ((), Just num_MLUC2){[MLUC_RECORD2]}: record_MLUC2
-((), Just (arg - 12 * num_MLUC2 - 12)){String}: body_MLUC2
+((), Just (arg - 12 * num_MLUC2 - 8)){String}: body_MLUC2
 
 |]
 
@@ -409,7 +405,6 @@ Para2
 
 arg :: Int
 
-4: 0
 2: functype_Para2
 2: 0
 4: g_Para2
@@ -435,11 +430,11 @@ VCGT2
 
 arg :: Int
 
-8{Integer}: 0
+4: 0
 2: hoge_VCGT2
 2: hage_VCGT2
 2: hige_VCGT2
-(1, Just (arg - 14)){[Int]}: body_VCGT2
+(1, Just (arg - 10)){[Int]}: body_VCGT2
 -- (2, Just (arg `div` 2 - 7)){[Int]}: body_VCGT2
 -- {Int}: some
 -- (arg - ((arg `div` 2) * 2)): some
@@ -460,11 +455,10 @@ NDIN2
 
 arg :: Int
 
-4: 0
 (4, Just 9){[Int]}: hoge_NDIN2
 (4, Just 3){[Int]}: hage_NDIN2
 (2, Just 3){[Int]}: hige_NDIN2
-(2, Just ((arg - 62) `div` 2)){[Int]}: body_NDIN2
+(2, Just ((arg - 58) `div` 2)){[Int]}: body_NDIN2
 
 |]
 
