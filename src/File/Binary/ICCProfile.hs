@@ -15,6 +15,8 @@ import Data.Monoid
 import Data.List
 import Data.Time
 
+import File.Binary.ICCProfile.TagTypes
+
 type ICCP_Data = (ICCP, [Element])
 
 readICCP :: (Monad m, Functor m, Binary b) => b -> m ICCP_Data
@@ -328,17 +330,6 @@ Desc deriving Show
 arg :: Int
 
 ((), Just arg){String}: body_desc
-
-|]
-
-[binary|
-
-Curv2 deriving Show
-
-arg :: Int
-
-4: num_curv
-(2, Just num_curv){[Int]}: body_curv
 
 |]
 
