@@ -3,8 +3,8 @@
 
 module File.Binary.ICCProfile (
 	ICCP(..), Tag(..), readICCP, writeICCP,
-	tags, tag_signature, short, paddings, sizes,
-	duplicate, fromElems, filePadding
+	short, paddings, sizes,
+	duplicate, fromElems, filePadding, tagTypes
 ) where
 
 import File.Binary
@@ -22,6 +22,12 @@ readICCP bin = do
 	(ret, _) <- fromBinary () bin
 	elems <- mapM (($ bin) . getElement') $ tags ret
 	return (ret, elems)
+
+tagTypes :: (Monad m, Functor m, Binary b) => b -> m [String]
+tagTypes bin = do
+	(ret, _) <- fromBinary () bin
+	tts <- mapM (($ bin) . getTagTypeName) $ tags ret
+	return $ map tag_type_name tts
 
 -- writeICCP :: (Monad m, Functor m, Binary b) => ICCP_Data -> m b
 -- writeICCP :: ICCP_Data -> IO String
@@ -45,11 +51,13 @@ fromElems :: (Monad m, Functor m) => [Element] -> m [String]
 fromElems elems = do
 	mapM (toBinary undefined . snd) elems
 
+addPadding :: String -> Int -> String
 addPadding d p
 	| p >= 0 = d `mappend` replicate p '\0'
 	| otherwise = take (length d + p) d
 
 paddings :: [Tag] -> [Int]
+paddings [] = error "bad"
 paddings [_] = []
 paddings (t0 : t1 : ts) =
 	tag_data_offset t1 - tag_data_offset t0 - tag_element_size t0 :
@@ -78,6 +86,17 @@ getElement' :: (Monad m, Functor m, Binary b) => Tag -> b -> m Element
 getElement' t@(Tag tn _ _) str = do
 	(d, _) <- getData t str
 	return $ edata tn d
+
+getTagTypeName :: (Monad m, Functor m, Binary b) => Tag -> b -> m TagType
+getTagTypeName (Tag _ offset _) = fmap fst . fromBinary () . snd . getBytes offset
+
+[binary|
+
+TagType deriving Show
+
+((), Just 4){String}: tag_type_name
+
+|]
 
 class Short a where
 	short :: a -> String
