@@ -16,19 +16,21 @@ main = do
 	putStrLn ""
 	print $ map tag_signature $ tags ret
 	putStrLn ""
-	putStrLn $ short dats
+-- *	putStrLn $ short dats
 	putStrLn $ strShowHex $ profile_identifier ret
 
 	print "hage"
 	let Just bin = writeICCP (ret, dats) :: Maybe String
 --	print (bin :: String)
 --	print =<< writeICCP (ret, dats)
+{-
 	writeBinaryFile (fpout ++ "add_1") . (++ "\0") =<<
 		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
+-}
 	writeBinaryFile fpout =<<
 		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
-	putStrLn $ take 1000 $ drop 6000 $ show cnt
-	putStrLn $ take 1000 $ drop 6000 $ show bin
+--	putStrLn $ take 1000 $ drop 6000 $ show cnt
+--	putStrLn $ take 1000 $ drop 6000 $ show bin
 --	putStrLn $ take 1000 $ drop 29100 $ show cnt
 --	putStrLn $ take 1000 $ drop 29100 $ show bin
 --	putStrLn $ take 1000 $ drop 30000 $ show cnt
@@ -42,6 +44,14 @@ main = do
 	print $ sum $ sizes $ tags ret
 	print $ profile_size ret - sum (sizes $ tags ret)
 	print $ tag_count ret * 12 + 4
+-}
+	print $ filePadding ret
+	print $ profile_size ret
+	print $ last $ tags ret
+	print $ map tag_signature $ tags ret
+{-
+	putStrLn $ take 1000 $ drop 1550000 $ show cnt
+	putStrLn $ take 1000 $ drop 1550000 $ show bin
 -}
 
 strShowHex = concatMap $ toTwo . flip showHex "" . ord

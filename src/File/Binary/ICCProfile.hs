@@ -4,7 +4,7 @@
 module File.Binary.ICCProfile (
 	ICCP(..), Tag(..), readICCP, writeICCP,
 	tags, tag_signature, short, paddings, sizes,
-	duplicate, fromElems
+	duplicate, fromElems, filePadding
 ) where
 
 import File.Binary
@@ -27,13 +27,19 @@ readICCP bin = do
 -- writeICCP :: ICCP_Data -> IO String
 writeICCP :: (Monad m, Functor m) => ICCP_Data -> m String
 writeICCP (ret, elems) = do
-	let pads = paddings (tags ret) ++ [0]
-	bin <- toBinary () ret
 	let	dups = duplicate [] (tags ret)
+		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
+	bin <- toBinary () ret
 	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
 --	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
 	let	bins' = zipWith addPadding bins pads
-	return $ mconcat $ bin : bins'
+	return $ mconcat (bin : bins') ++ replicate (filePadding ret) '\0'
+
+filePadding :: ICCP -> Int
+filePadding iccp = profile_size iccp -
+	(tag_data_offset lastTag + tag_element_size lastTag)
+	where
+	lastTag = last $ tags iccp
 
 fromElems :: (Monad m, Functor m) => [Element] -> m [String]
 fromElems elems = do
