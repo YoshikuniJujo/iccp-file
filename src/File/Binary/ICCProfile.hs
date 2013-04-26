@@ -7,7 +7,7 @@ module File.Binary.ICCProfile (
 	duplicate, fromElems, filePadding, tagTypes,
 
 	MLUC2(..),
-	MMOD2(..), Text2(..), Elem(..), Data(..)
+	MMOD2(..), Text2(..), Elem(..), Body(..)
 ) where
 
 import File.Binary
@@ -193,17 +193,17 @@ Tag deriving Show
 
 |]
 
-edata :: String -> Data -> Element
+edata :: String -> Body -> Element
 edata = (,)
 
-type Element = (String, Data)
+type Element = (String, Body)
 
-getData :: (Monad m, Functor m, Binary b) => Tag -> b -> m (Data, b)
+getData :: (Monad m, Functor m, Binary b) => Tag -> b -> m (Body, b)
 getData (Tag _ offset size) = fromBinary size . snd . getBytes offset
 
 [binary|
 
-Data
+Body
 
 arg :: Int
 
@@ -213,8 +213,8 @@ arg :: Int
 
 |]
 
-instance Show Data where
-	show dat = "Data (" ++ show (data_body dat) ++ ")"
+instance Show Body where
+	show dat = "Body (" ++ show (data_body dat) ++ ")"
 {-
 	show dat = "(Data " ++
 		show (data_type dat) ++ " " ++
@@ -225,14 +225,14 @@ data Elem
 	= ElemText Text2
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
-	| ElemCurv Curv2
+	| ElemCurv Curv
 	| ElemChad CHAD2
 	| ElemMluc MLUC2
 	| ElemMmod MMOD2
 	| ElemPara Para2
 	| ElemVCGT VCGT2
 	| ElemNDIN NDIN2
-	| ElemData String String
+	| ElemOthers String String
 	deriving Show
 
 instance Field Elem where
@@ -257,9 +257,9 @@ instance Field Elem where
 		fmap (first ElemVCGT) . fromBinary size
 	fromBinary ("ndin", size) =
 --		fmap (first ElemNDIN) . fromBinary size
-		fmap (first $ ElemData "ndin") . fromBinary ((), Just size)
+		fmap (first $ ElemOthers "ndin") . fromBinary ((), Just size)
 	fromBinary (typ, size) =
-		fmap (first $ ElemData typ) . fromBinary ((), Just size)
+		fmap (first $ ElemOthers typ) . fromBinary ((), Just size)
 	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
 	toBinary (_, size) (ElemCurv dat) = toBinary size dat
 	toBinary (_, size) (ElemChad dat) = toBinary size dat
@@ -270,7 +270,7 @@ instance Field Elem where
 	toBinary (_, size) (ElemPara dat) = toBinary size dat
 	toBinary (_, size) (ElemVCGT dat) = toBinary size dat
 	toBinary (_, size) (ElemNDIN dat) = toBinary size dat
-	toBinary (_, size) (ElemData _ dat) = toBinary ((), Just size) dat
+	toBinary (_, size) (ElemOthers _ dat) = toBinary ((), Just size) dat
 
 [binary|
 

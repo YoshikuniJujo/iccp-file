@@ -8,7 +8,7 @@ import File.Binary.Instances.BigEndian ()
 
 [binary|
 
-Curv2 deriving Show
+Curv deriving Show
 
 arg :: Int
 

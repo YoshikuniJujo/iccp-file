@@ -18,8 +18,8 @@ instance Short a => Short [a] where
 instance Short a => Short (String, a) where
 	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
-instance Short Data where
-	short dat = "Data (" ++ short (data_body dat) ++ ")"
+instance Short Body where
+	short dat = "Body (" ++ short (data_body dat) ++ ")"
 
 instance Short Elem where
 	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
@@ -31,7 +31,7 @@ instance Short Elem where
 instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t
 
-instance Short Curv2 where
+instance Short Curv where
 	short = dotdot 20 20 . show
 
 instance Short MLUC2 where
