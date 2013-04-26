@@ -4,6 +4,8 @@ import System.Environment
 import Data.List
 -- import Control.Applicative
 
+import Short
+
 main :: IO ()
 main = do
 	fin : tagType : _ <- getArgs

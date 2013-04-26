@@ -3,8 +3,11 @@
 
 module File.Binary.ICCProfile (
 	ICCP(..), Tag(..), readICCP, writeICCP,
-	short, paddings, sizes,
-	duplicate, fromElems, filePadding, tagTypes
+	paddings, sizes,
+	duplicate, fromElems, filePadding, tagTypes,
+
+	MLUC2(..),
+	MMOD2(..), Text2(..), Elem(..), Data(..)
 ) where
 
 import File.Binary
@@ -12,14 +15,13 @@ import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian (BitsInt)
 import Control.Arrow
 import Data.Monoid
-import Data.List
 import Data.Time
 
 import File.Binary.ICCProfile.TagTypes
 
-type ICCP_Data = (ICCP, [Element])
+type ICCPData = (ICCP, [Element])
 
-readICCP :: (Monad m, Functor m, Binary b) => b -> m ICCP_Data
+readICCP :: (Monad m, Functor m, Binary b) => b -> m ICCPData
 readICCP bin = do
 	(ret, _) <- fromBinary () bin
 	elems <- mapM (($ bin) . getElement') $ tags ret
@@ -31,9 +33,9 @@ tagTypes bin = do
 	tts <- mapM (($ bin) . getTagTypeName) $ tags ret
 	return $ map tag_type_name tts
 
--- writeICCP :: (Monad m, Functor m, Binary b) => ICCP_Data -> m b
--- writeICCP :: ICCP_Data -> IO String
-writeICCP :: (Monad m, Functor m) => ICCP_Data -> m String
+-- writeICCP :: (Monad m, Functor m, Binary b) => ICCPData -> m b
+-- writeICCP :: ICCPData -> IO String
+writeICCP :: (Monad m, Functor m) => ICCPData -> m String
 writeICCP (ret, elems) = do
 	let	dups = duplicate [] (tags ret)
 		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
@@ -50,8 +52,7 @@ filePadding iccp = profile_size iccp -
 	lastTag = last $ tags iccp
 
 fromElems :: (Monad m, Functor m) => [Element] -> m [String]
-fromElems elems = do
-	mapM (toBinary undefined . snd) elems
+fromElems = mapM $ toBinary undefined . snd
 
 addPadding :: String -> Int -> String
 addPadding d p
@@ -73,7 +74,7 @@ deleteIndexes (n : ns) xs =
 duplicate :: [Tag] -> [Tag] -> [Int]
 duplicate _ [] = []
 duplicate pre (t : post)
-	| or $ map (sameOffsetSize t) pre = length pre : duplicate (t : pre) post
+	| any (sameOffsetSize t) pre = length pre : duplicate (t : pre) post
 	| otherwise = duplicate (t : pre) post
 
 sameOffsetSize :: Tag -> Tag -> Bool
@@ -81,8 +82,7 @@ sameOffsetSize (Tag _ offset1 size1) (Tag _ offset2 size2) =
 	offset1 == offset2 && size1 == size2
 
 sizes :: [Tag] -> [Int]
-sizes [] = []
-sizes (t : ts) = tag_element_size t : sizes ts
+sizes = map tag_element_size
 
 getElement' :: (Monad m, Functor m, Binary b) => Tag -> b -> m Element
 getElement' t@(Tag tn _ _) str = do
@@ -99,15 +99,6 @@ TagType deriving Show
 ((), Just 4){String}: tag_type_name
 
 |]
-
-class Short a where
-	short :: a -> String
-
-instance Short a => Short [a] where
-	short xs = "[" ++ intercalate ", " (map short xs) ++ "]"
-
-instance Short a => Short (String, a) where
-	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
 [binary|
 
@@ -207,9 +198,6 @@ edata = (,)
 
 type Element = (String, Data)
 
-dotdot :: Int -> Int -> String -> String
-dotdot i t str = take i str ++ " ... " ++ reverse (take t $ reverse str)
-
 getData :: (Monad m, Functor m, Binary b) => Tag -> b -> m (Data, b)
 getData (Tag _ offset size) = fromBinary size . snd . getBytes offset
 
@@ -233,9 +221,6 @@ instance Show Data where
 		"(" ++ show (data_body dat) ++ "))"
 -}
 
-instance Short Data where
-	short dat = "Data (" ++ short (data_body dat) ++ ")"
-
 data Elem
 	= ElemText Text2
 	| ElemXYZ XYZ2
@@ -249,13 +234,6 @@ data Elem
 	| ElemNDIN NDIN2
 	| ElemData String String
 	deriving Show
-
-instance Short Elem where
-	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
-	short (ElemMmod mmod) = "ElemMmod " ++ "(" ++ short mmod ++ ")"
-	short (ElemText txt) = "ElemText " ++ "(" ++ short txt ++ ")"
-	short (ElemCurv curv) = "ElemCurv " ++ "(" ++ short curv ++ ")"
-	short elm = show elm
 
 instance Field Elem where
 	type FieldArgument Elem = (String, Int)
@@ -307,9 +285,6 @@ arg :: Int
 instance Show Text2 where
 	show = text
 
-instance Short Text2 where
-	short t = show $ dotdot 10 10 $ text t
-
 [binary|
 
 XYZ2 deriving Show
@@ -333,9 +308,6 @@ arg :: Int
 
 |]
 
-instance Short Curv2 where
-	short = dotdot 20 20 . show
-
 [binary|
 
 CHAD2 deriving Show
@@ -356,7 +328,7 @@ arg :: Int
 
 [binary|
 
-MLUC2
+MLUC2 deriving Show
 
 arg :: Int
 
@@ -378,19 +350,6 @@ MLUC_RECORD2 deriving Show
 
 |]
 
-instance Show MLUC2 where
-	show mluc = "(MLUC2 " ++
-		show (num_MLUC2 mluc) ++ " " ++
-		dotdot 90 90 (show $ record_MLUC2 mluc) ++ " " ++
-		dotdot 100 100 (show $ body_MLUC2 mluc) ++ ")"
---		show (map (body_MLUC2 mluc !!) [1, 3 .. 300]) ++ ")"
-
-instance Short MLUC2 where
-	short mluc = "(MLUC2 " ++
-		show (num_MLUC2 mluc) ++ " " ++
-		dotdot 20 20 (show $ record_MLUC2 mluc) ++ " " ++
-		dotdot 40 40 (show $ body_MLUC2 mluc) ++ ")"
-
 [binary|
 
 MMOD2
@@ -404,10 +363,6 @@ arg :: Int
 instance Show MMOD2 where
 	show mmod = "(MMOD2 " ++
 		show (body_MMOD2 mmod) ++ ")"
-
-instance Short MMOD2 where
-	short mmod = "(MMOD2 " ++
-		dotdot 10 10 (show $ body_MMOD2 mmod) ++ ")"
 
 [binary|
 
@@ -436,7 +391,7 @@ instance Show Para2 where
 
 [binary|
 
-VCGT2
+VCGT2 deriving Show
 
 arg :: Int
 
@@ -452,16 +407,9 @@ arg :: Int
 
 |]
 
-instance Show VCGT2 where
-	show vcgt = "(VCGT2 " ++
-		show (hoge_VCGT2 vcgt) ++ " " ++
-		show (hage_VCGT2 vcgt) ++ " " ++
-		show (hige_VCGT2 vcgt) ++ " " ++
-		dotdot 100 100 (show $ body_VCGT2 vcgt) ++ ")"
-
 [binary|
 
-NDIN2
+NDIN2 deriving Show
 
 arg :: Int
 
@@ -471,10 +419,3 @@ arg :: Int
 (2, Just ((arg - 58) `div` 2)){[Int]}: body_NDIN2
 
 |]
-
-instance Show NDIN2 where
-	show ndin = "(NDIN2 " ++
-		show (hoge_NDIN2 ndin) ++ " " ++
-		show (hage_NDIN2 ndin) ++ " " ++
-		show (hige_NDIN2 ndin) ++ " " ++
-		dotdot 100 100 (show $ body_NDIN2 ndin) ++ ")"
