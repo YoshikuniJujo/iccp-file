@@ -222,10 +222,12 @@ instance Show Body where
 -}
 
 data Elem
-	= ElemText Text2
+	= ElemCurv Curv
+	| ElemData Data
+	| ElemMFT2 MFT2
+	| ElemText Text2
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
-	| ElemCurv Curv
 	| ElemChad CHAD2
 	| ElemMluc MLUC2
 	| ElemMmod MMOD2
@@ -237,10 +239,14 @@ data Elem
 
 instance Field Elem where
 	type FieldArgument Elem = (String, Int)
-	fromBinary ("XYZ ", size) =
-		fmap (first ElemXYZ) . fromBinary size
 	fromBinary ("curv", size) =
 		fmap (first ElemCurv) . fromBinary size
+	fromBinary ("data", size) =
+		fmap (first ElemData) . fromBinary size
+	fromBinary ("mft2", size) =
+		fmap (first ElemMFT2) . fromBinary size
+	fromBinary ("XYZ ", size) =
+		fmap (first ElemXYZ) . fromBinary size
 	fromBinary ("sf32", size) =
 		fmap (first ElemChad) . fromBinary size
 	fromBinary ("text", size) =
@@ -260,8 +266,10 @@ instance Field Elem where
 		fmap (first $ ElemOthers "ndin") . fromBinary ((), Just size)
 	fromBinary (typ, size) =
 		fmap (first $ ElemOthers typ) . fromBinary ((), Just size)
-	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
 	toBinary (_, size) (ElemCurv dat) = toBinary size dat
+	toBinary (_, size) (ElemData dat) = toBinary size dat
+	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
+	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
 	toBinary (_, size) (ElemChad dat) = toBinary size dat
 	toBinary (_, size) (ElemText dat) = toBinary size dat
 	toBinary (_, size) (ElemDesc dat) = toBinary size dat

@@ -21,6 +21,7 @@ main = do
 	putStrLn ""
 	putStrLn $ "public, used, not-implemented:\n              " ++
 		unwords (public `intersect` used \\ implemented)
+	putStrLn $ show (100 * length implemented `div` length public) ++ "%"
 
 groupN :: Int -> [a] -> [[a]]
 groupN _ [] = []
@@ -36,5 +37,5 @@ public = [
 
 implemented :: [String]
 implemented = [
-	"curv"
+	"curv", "data", "mft2"
  ]

@@ -7,6 +7,8 @@ import System.Environment
 import Data.Char
 import Numeric
 
+import Short
+
 main :: IO ()
 main = do
 	fpin : fpout : _ <- getArgs

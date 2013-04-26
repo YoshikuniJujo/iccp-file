@@ -3,22 +3,26 @@ import File.Binary.ICCProfile
 import System.Environment
 import Data.List
 -- import Control.Applicative
+import Control.Monad
 
 import Short
 
 main :: IO ()
 main = do
-	fin : tagType : _ <- getArgs
+	fin : tagType : flags <- getArgs
 	cnt <- readBinaryFile fin
 	tgs <- tagTypes cnt
-	(_, b) <- readICCP cnt
+	(h, b) <- readICCP cnt
+	print $ map (\(Tag sig off size) -> (sig, off, size)) $ tags h
 	print $ public `intersect` tgs
 	putStrLn ""
 --	print tgs
 --	print $ map fst b
 	let curvs = map (b !!) $ elemIndices tagType tgs
-	putStrLn $ short curvs
-	print $ head curvs
+	if "1" `elem` flags
+		then putStrLn $ short $ head curvs
+		else putStrLn $ short curvs
+	when ("-s" `notElem` flags) $ print $ head curvs
 
 public :: [String]
 public = [
