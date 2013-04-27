@@ -8,10 +8,37 @@ import Data.Char
 import Numeric
 
 import Short
+import System.FilePath
+
+import Control.Monad
 
 main :: IO ()
 main = do
-	fpin : fpout : flags <- getArgs
+	args <- getArgs
+	let	(flags, fpins) = case args of
+			"--md5sum-0" : is -> (["--md5sum-0"], is)
+			is -> ([], is)
+		fpouts = map outFilePath fpins
+	zipWithM_ (reading flags) fpins fpouts
+	print (fpins, fpouts)
+
+outFilePath :: FilePath -> FilePath
+outFilePath infp =
+	takeDirectory infp `combine` "out" `combine` takeFileName infp
+
+-- main :: IO ()
+-- main = do
+--	fpin : fpout : flags <- getArgs
+reading :: [String] -> FilePath -> FilePath -> IO ()
+reading flags fpin fpout = do
+{-
+	args <- getArgs
+	let	(flags, fpin) = case args of
+			"--md5sum-0" : i : _ -> (["--md5sum-0"], i)
+			i : _ -> ([], i)
+		fpout = takeDirectory fpin `combine` "out" `combine`
+			takeFileName fpin
+-}
 	cnt <- readBinaryFile fpin
 	(ret, dats) <- readICCP cnt
 	print ret
