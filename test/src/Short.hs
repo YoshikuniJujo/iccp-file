@@ -23,8 +23,9 @@ instance Short Body where
 
 instance Short Elem where
 	short (ElemCurv curv) = "ElemCurv " ++ "(" ++ short curv ++ ")"
-	short (ElemData dat) = "ElemData " ++ "(" ++ short dat ++ ")"
+	short (ElemData dat ) = "ElemData " ++ "(" ++ short dat  ++ ")"
 	short (ElemMFT2 mft2) = "ElemMFT2 " ++ "(" ++ short mft2 ++ ")"
+	short (ElemMAB  mab ) = "ElemMAB "  ++ "(" ++ short mab  ++ ")"
 	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
 	short (ElemMmod mmod) = "ElemMmod " ++ "(" ++ short mmod ++ ")"
 	short (ElemText txt) = "ElemText " ++ "(" ++ short txt ++ ")"
@@ -60,6 +61,17 @@ instance Short MFT2 where
 		"clut_table = " ++ dotdot 60 30 (show $ clut_table_mft2 mft2) ++
 			", " ++
 		"output_table = " ++ dotdot 10 20 (show $ output_table_mft2 mft2) ++
+		"}"
+
+instance Short MAB where
+	short mab = "MAB " ++ "{" ++
+		"i = " ++ show (input_num_mab mab) ++ ", " ++
+		"o = " ++ show (output_num_mab mab) ++ ", " ++
+		"b_offset = " ++ show (b_offset_mab mab) ++ ", " ++
+		"matrix_offset = " ++ show (matrix_offset_mab mab) ++ ", " ++
+		"clut_offset = " ++ show (clut_offset_mab mab) ++ ", " ++
+		"a_offset = " ++ show (a_offset_mab mab) ++ ", " ++
+		"body_mab = " ++ dotdot 20 20 (show $ body_mab mab) ++
 		"}"
 
 instance Short Text2 where

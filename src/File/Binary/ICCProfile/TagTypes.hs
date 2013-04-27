@@ -54,3 +54,21 @@ arg :: Int
 (2, Just $ output_table_n_mft2 * output_num_mft2){[Int]}: output_table_mft2
 
 |]
+
+[binary|
+
+MAB deriving Show
+
+arg :: Int
+
+1: input_num_mab
+1: output_num_mab
+2: 0
+4: b_offset_mab
+4: matrix_offset_mab
+4: m_offset_mab
+4: clut_offset_mab
+4: a_offset_mab
+((), Just $ arg - 24){String}: body_mab
+
+|]

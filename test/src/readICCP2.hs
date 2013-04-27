@@ -11,7 +11,7 @@ import Short
 
 main :: IO ()
 main = do
-	fpin : fpout : _ <- getArgs
+	fpin : fpout : flags <- getArgs
 	cnt <- readBinaryFile fpin
 	(ret, dats) <- readICCP cnt
 	print ret
@@ -29,8 +29,11 @@ main = do
 	writeBinaryFile (fpout ++ "add_1") . (++ "\0") =<<
 		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
 -}
-	writeBinaryFile fpout =<<
-		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
+	let ret' = if "--md5-0" `elem` flags
+		then ret { profile_identifier = replicate 16 '\0' }
+		else ret
+	writeBinaryFile fpout =<< writeICCP (ret', dats)
+--		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
 --	putStrLn $ take 1000 $ drop 6000 $ show cnt
 --	putStrLn $ take 1000 $ drop 6000 $ show bin
 --	putStrLn $ take 1000 $ drop 29100 $ show cnt

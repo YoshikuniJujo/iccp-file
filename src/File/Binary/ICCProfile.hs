@@ -225,6 +225,7 @@ data Elem
 	= ElemCurv Curv
 	| ElemData Data
 	| ElemMFT2 MFT2
+	| ElemMAB  MAB
 	| ElemText Text2
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
@@ -245,6 +246,8 @@ instance Field Elem where
 		fmap (first ElemData) . fromBinary size
 	fromBinary ("mft2", size) =
 		fmap (first ElemMFT2) . fromBinary size
+	fromBinary ("mAB ", size) =
+		fmap (first ElemMAB ) . fromBinary size
 	fromBinary ("XYZ ", size) =
 		fmap (first ElemXYZ) . fromBinary size
 	fromBinary ("sf32", size) =
@@ -269,6 +272,7 @@ instance Field Elem where
 	toBinary (_, size) (ElemCurv dat) = toBinary size dat
 	toBinary (_, size) (ElemData dat) = toBinary size dat
 	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
+	toBinary (_, size) (ElemMAB  dat) = toBinary size dat
 	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
 	toBinary (_, size) (ElemChad dat) = toBinary size dat
 	toBinary (_, size) (ElemText dat) = toBinary size dat
