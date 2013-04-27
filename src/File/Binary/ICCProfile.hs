@@ -39,7 +39,7 @@ tagTypes bin = do
 writeICCP :: (Monad m, Functor m) => ICCPData -> m String
 writeICCP (ret, elems) = do
 	let	dups = duplicate [] (tags ret)
-		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
+--		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
 		noDupTags = deleteIndexes dups (tags ret)
 	bin <- toBinary () ret
 --	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
@@ -60,10 +60,12 @@ filePadding iccp = profile_size iccp -
 fromElems :: (Monad m, Functor m) => [Element] -> m [String]
 fromElems = mapM $ toBinary undefined . snd
 
+{-
 addPadding :: String -> Int -> String
 addPadding d p
 	| p >= 0 = d `mappend` replicate p '\0'
 	| otherwise = take (length d + p) d
+-}
 
 paddings :: [Tag] -> [Int]
 paddings [] = error "bad"

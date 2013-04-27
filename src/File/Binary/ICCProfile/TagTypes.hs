@@ -2,7 +2,6 @@
 
 module File.Binary.ICCProfile.TagTypes (
 	Body(..),
-	BodyList(..),
 	Elem(..),
 	Curv(..),
 	Data(..),
@@ -20,7 +19,6 @@ import File.Binary.ICCProfile.TagTypes_yet
 
 import Control.Applicative
 import Control.Arrow
-import Data.Maybe
 
 getPadding :: Int -> Int
 getPadding n
@@ -36,9 +34,13 @@ arg :: Int
 ((), Just 4){String}: data_type
 4: 0
 (data_type, arg - 8){Elem}: data_body
-getPadding arg: 0 -- padd
+getPadding $ getSize arg data_body: 0 -- padd
 
 |]
+
+getSize :: Int -> Elem -> Int
+getSize _ (ElemCurv e) = 4 + 2 * num_curv e
+getSize arg _ = arg
 
 instance Show Body where
 	show dat = "Body (" ++ show (data_body dat) ++ ")"
@@ -143,15 +145,7 @@ arg :: Int
 1: output_num_mft2
 1: clut_num_mft2
 1: 0
-4: e1_mft2
-4: e2_mft2
-4: e3_mft2
-4: e4_mft2
-4: e5_mft2
-4: e6_mft2
-4: e7_mft2
-4: e8_mft2
-4: e9_mft2
+{Matrix33}: matrix_mft2
 2: input_table_n_mft2
 2: output_table_n_mft2
 (2, Just $ input_table_n_mft2 * input_num_mft2){[Int]}: input_table_mft2
@@ -160,10 +154,29 @@ arg :: Int
 
 |]
 
+[binary|
+
+Matrix33 deriving Show
+
+4: e1_matrix33
+4: e2_matrix33
+4: e3_matrix33
+4: e4_matrix33
+4: e5_matrix33
+4: e6_matrix33
+4: e7_matrix33
+4: e8_matrix33
+4: e9_matrix33
+
+|]
+
 data MAB = MAB {
 	mab__mab :: MAB_,
 --	b_curvs :: BodyList
-	b_curvs :: Body
+	b_curvs_mab :: [Body],
+	matrix_mab :: Maybe Matrix33,
+	m_curvs_mab :: Maybe [Body] -- ,
+--	clut_mab :: MAB_CLUT
  } deriving Show
 
 instance Field MAB where
@@ -172,33 +185,24 @@ instance Field MAB where
 		(ret, rest) <- fromBinary n bin
 		ret' <- mab_ToMab ret
 		return (ret', rest)
-	toBinary n (MAB mab_ _) = toBinary n mab_
+	toBinary n (MAB mab_ _ _ _) = toBinary n mab_
 
--- mab_ToMab :: iMAB_ -> MAB
+mab_ToMab :: (Monad m, Functor m) => MAB_ -> m MAB
 mab_ToMab mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
-	(ret, _) <- fromBinary 4 $
+	(bcurvs, _) <- fromBinary (undefined, Just $ output_num_mab mab_) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
-	return $ MAB mab_ ret
-
-{-
-getPadding :: Field f => f -> Int
-getPadding :: Body -> Int
-getPadding f = fromJust $ do
-	str <- toBinary (error "bad") f
-	return $ 4 - length (str :: String) `mod` 4
--}
-
-[binary|
-
-BodyList deriving Show
-
-arg :: Int
-
-(undefined, Just arg){[Body]}: body_list
--- getPadding body_list: 0
-
-|]
+	let	matrix_offset = matrix_offset_mab mab_
+		m_offset = m_offset_mab mab_
+	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
+		else first Just <$>
+			fromBinary () (snd $ getBytes (matrix_offset - 32) $
+				body_mab mab_)
+	(mcurvs, _) <- if m_offset == 0 then return (Nothing, undefined) else
+		first Just <$> fromBinary (undefined, Just $ output_num_mab mab_)
+			(snd $ getBytes (m_offset_mab mab_ - 32) $ body_mab mab_)
+--	(clut, _)
+	return $ MAB mab_ bcurvs matrix mcurvs
 
 [binary|
 
@@ -217,3 +221,19 @@ arg :: Int
 ((), Just $ arg - 24){String}: body_mab
 
 |]
+
+[binary|
+
+MAB_CLUT deriving Show
+
+arg :: (Int, Int)
+
+(1, Just 16){[Int]}: nums_mab_clut
+1: byte_num_mab_clut
+3: 0
+(byte_num_mab_clut, Just $ product (take (fst arg) nums_mab_clut) * snd arg):
+	body_mab_clut
+
+|]
+
+

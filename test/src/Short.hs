@@ -17,6 +17,10 @@ class Short a where
 instance Short a => Short [a] where
 	short xs = "[" ++ intercalate ", " (map short xs) ++ "]"
 
+instance Short a => Short (Maybe a) where
+	short (Just x) = "Just " ++ short x
+	short _ = "Nothing"
+
 instance Short a => Short (String, a) where
 	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
@@ -24,9 +28,6 @@ instance Short Body where
 	short dat = "Body " ++
 --		show (padd dat) ++ " " ++
 		"(" ++ short (data_body dat) ++ ")"
-
-instance Short BodyList where
-	short = short . body_list
 
 instance Short Elem where
 	short (ElemCurv curv) = "ElemCurv " ++ "(" ++ short curv ++ ")"
@@ -54,6 +55,8 @@ instance Short MFT2 where
 		"i = " ++ show (input_num_mft2 mft2) ++ ", " ++
 		"o = " ++ show (output_num_mft2 mft2) ++ ", " ++
 		"g = " ++ show (clut_num_mft2 mft2) ++ ", " ++
+		"matrix = " ++ show (matrix_mft2 mft2) ++ ", " ++
+{-
 		"e[1-9] = " ++
 			show (e1_mft2 mft2) ++ " " ++
 			show (e2_mft2 mft2) ++ " " ++
@@ -64,6 +67,7 @@ instance Short MFT2 where
 			show (e7_mft2 mft2) ++ " " ++
 			show (e8_mft2 mft2) ++ " " ++
 			show (e9_mft2 mft2) ++ ", " ++
+-}
 		"n = " ++ show (input_table_n_mft2 mft2) ++ ", " ++
 		"m = " ++ show (output_table_n_mft2 mft2) ++ ", " ++
 		"input_table = " ++ dotdot 10 20 (show $ input_table_mft2 mft2) ++
@@ -79,13 +83,16 @@ instance Short MAB where
 		"o = " ++ show (output_num_mab mab) ++ ", " ++
 		"b_offset = " ++ show (b_offset_mab mab) ++ ", " ++
 		"matrix_offset = " ++ show (matrix_offset_mab mab) ++ ", " ++
+		"m_offset = " ++ show (m_offset_mab mab) ++ ", " ++
 		"clut_offset = " ++ show (clut_offset_mab mab) ++ ", " ++
 		"a_offset = " ++ show (a_offset_mab mab) ++ ", " ++
-		"body_mab = " ++ dotdot 20 20 (show $ body_mab mab) ++
-		"bc0 = " ++ short bc0 ++
+		"body_mab = " ++ dotdot 500 20 (show $ body_mab mab) ++ ", " ++
+		"bcurvs = " ++ short bcs ++ ", " ++
+		"matrix = " ++ show matrix ++ ", " ++
+		"mcurvs = " ++ short mcs ++
 		"}"
 		where
-		MAB mab bc0 = mab_
+		MAB mab bcs matrix mcs = mab_
 
 instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t

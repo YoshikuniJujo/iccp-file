@@ -13,3 +13,5 @@
 	フォルダを test/iccps/ から test/iccps/out/ へと変えたファイルに書き出す
 	プログラムを作ろう。
 	というか、readICCP2 をそういう仕様に変えよう
+7. s15Fixed16Number, u8Fixed8Number 等をちゃんと Fixed に変換するようにしよう
+	読み込み時にしてしまっていいかもしれない
