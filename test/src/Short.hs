@@ -7,7 +7,9 @@ import File.Binary.ICCProfile.TagTypes
 import Data.List
 
 dotdot :: Int -> Int -> String -> String
-dotdot i t str = take i str ++ " ... " ++ reverse (take t $ reverse str)
+dotdot i t str
+	| length str <= i + t = str
+	| otherwise = take i str ++ " ... " ++ reverse (take t $ reverse str)
 
 class Short a where
 	short :: a -> String
@@ -19,7 +21,12 @@ instance Short a => Short (String, a) where
 	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
 instance Short Body where
-	short dat = "Body (" ++ short (data_body dat) ++ ")"
+	short dat = "Body " ++
+--		show (padd dat) ++ " " ++
+		"(" ++ short (data_body dat) ++ ")"
+
+instance Short BodyList where
+	short = short . body_list
 
 instance Short Elem where
 	short (ElemCurv curv) = "ElemCurv " ++ "(" ++ short curv ++ ")"
@@ -34,7 +41,10 @@ instance Short Elem where
 	short elm = show elm
 
 instance Short Curv where
-	short = dotdot 20 20 . show
+	short crv = "Curv " ++ "{" ++
+		"num_curv = " ++ show (num_curv crv) ++ ", " ++
+		"curv = " ++ dotdot 20 20 (show $ body_curv crv) ++
+		"}"
 
 instance Short Data where
 	short = dotdot 40 30 . show
@@ -64,7 +74,7 @@ instance Short MFT2 where
 		"}"
 
 instance Short MAB where
-	short mab = "MAB " ++ "{" ++
+	short mab_ = "MAB " ++ "{" ++
 		"i = " ++ show (input_num_mab mab) ++ ", " ++
 		"o = " ++ show (output_num_mab mab) ++ ", " ++
 		"b_offset = " ++ show (b_offset_mab mab) ++ ", " ++
@@ -72,7 +82,10 @@ instance Short MAB where
 		"clut_offset = " ++ show (clut_offset_mab mab) ++ ", " ++
 		"a_offset = " ++ show (a_offset_mab mab) ++ ", " ++
 		"body_mab = " ++ dotdot 20 20 (show $ body_mab mab) ++
+		"bc0 = " ++ short bc0 ++
 		"}"
+		where
+		MAB mab bc0 = mab_
 
 instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t

@@ -15,6 +15,7 @@ main = do
 	cnt <- readBinaryFile fpin
 	(ret, dats) <- readICCP cnt
 	print ret
+	putStrLn $ short dats
 	putStrLn ""
 	print $ map tag_signature $ tags ret
 	putStrLn ""
@@ -32,6 +33,7 @@ main = do
 	let ret' = if "--md5-0" `elem` flags
 		then ret { profile_identifier = replicate 16 '\0' }
 		else ret
+-- *	print dats
 	writeBinaryFile fpout =<< writeICCP (ret', dats)
 --		writeICCP (ret{ profile_identifier = replicate 16 '\0' }, dats)
 --	putStrLn $ take 1000 $ drop 6000 $ show cnt
@@ -43,7 +45,7 @@ main = do
 	print $ paddings $ tags ret
 	print $ duplicate [] $ tags ret
 	print $ map tag_element_size $ tags ret
-	print $ map length =<< fromElems dats
+--	print $ map length =<< fromElems dats
 {-
 	print $ sizes $ tags ret
 	print $ sum $ sizes $ tags ret

@@ -1,10 +1,115 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies #-}
 
-module File.Binary.ICCProfile.TagTypes where
+module File.Binary.ICCProfile.TagTypes (
+	Body(..),
+	BodyList(..),
+	Elem(..),
+	Curv(..),
+	Data(..),
+	MFT2(..),
+	MAB(..),
+	MAB_(..),
+	module File.Binary.ICCProfile.TagTypes_yet
+) where
 
 import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian ()
+
+import File.Binary.ICCProfile.TagTypes_yet
+
+import Control.Applicative
+import Control.Arrow
+import Data.Maybe
+
+getPadding :: Int -> Int
+getPadding n
+	| m <- n `mod` 4, m /= 0 = 4 - m
+	| otherwise = 0
+
+[binary|
+
+Body
+
+arg :: Int
+
+((), Just 4){String}: data_type
+4: 0
+(data_type, arg - 8){Elem}: data_body
+getPadding arg: 0 -- padd
+
+|]
+
+instance Show Body where
+	show dat = "Body (" ++ show (data_body dat) ++ ")"
+{-
+	show dat = "(Data " ++
+		show (data_type dat) ++ " " ++
+		"(" ++ show (data_body dat) ++ "))"
+-}
+
+data Elem
+	= ElemCurv Curv
+	| ElemData Data
+	| ElemMFT2 MFT2
+	| ElemMAB  MAB
+	| ElemText Text2
+	| ElemXYZ XYZ2
+	| ElemDesc Desc
+	| ElemChad CHAD2
+	| ElemMluc MLUC2
+	| ElemMmod MMOD2
+	| ElemPara Para2
+	| ElemVCGT VCGT2
+	| ElemNDIN NDIN2
+	| ElemOthers String String
+	deriving Show
+
+instance Field Elem where
+	type FieldArgument Elem = (String, Int)
+	fromBinary ("curv", size) =
+		fmap (first ElemCurv) . fromBinary size
+	fromBinary ("data", size) =
+		fmap (first ElemData) . fromBinary size
+	fromBinary ("mft2", size) =
+		fmap (first ElemMFT2) . fromBinary size
+	fromBinary ("mAB ", size) =
+		fmap (first ElemMAB ) . fromBinary size
+	fromBinary ("XYZ ", size) =
+		fmap (first ElemXYZ) . fromBinary size
+	fromBinary ("sf32", size) =
+		fmap (first ElemChad) . fromBinary size
+	fromBinary ("text", size) =
+		fmap (first ElemText) . fromBinary size
+	fromBinary ("desc", size) =
+		fmap (first ElemDesc) . fromBinary size
+	fromBinary ("mluc", size) =
+		fmap (first ElemMluc) . fromBinary size
+	fromBinary ("mmod", size) =
+		fmap (first ElemMmod) . fromBinary size
+	fromBinary ("para", size) =
+		fmap (first ElemPara) . fromBinary size
+	fromBinary ("vcgt", size) =
+		fmap (first ElemVCGT) . fromBinary size
+	fromBinary ("ndin", size) =
+--		fmap (first ElemNDIN) . fromBinary size
+		fmap (first $ ElemOthers "ndin") . fromBinary ((), Just size)
+	fromBinary (typ, size) =
+		fmap (first $ ElemOthers typ) . fromBinary ((), Just size)
+	toBinary (_, size) (ElemCurv dat) = toBinary size dat
+	toBinary (_, size) (ElemData dat) = toBinary size dat
+	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
+	toBinary (_, size) (ElemMAB  dat) = toBinary size dat
+	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
+	toBinary (_, size) (ElemChad dat) = toBinary size dat
+	toBinary (_, size) (ElemText dat) = toBinary size dat
+	toBinary (_, size) (ElemDesc dat) = toBinary size dat
+	toBinary (_, size) (ElemMluc dat) = toBinary size dat
+	toBinary (_, size) (ElemMmod dat) = toBinary size dat
+	toBinary (_, size) (ElemPara dat) = toBinary size dat
+	toBinary (_, size) (ElemVCGT dat) = toBinary size dat
+	toBinary (_, size) (ElemNDIN dat) = toBinary size dat
+	toBinary (_, size) (ElemOthers _ dat) = toBinary ((), Just size) dat
 
 [binary|
 
@@ -55,9 +160,49 @@ arg :: Int
 
 |]
 
+data MAB = MAB {
+	mab__mab :: MAB_,
+--	b_curvs :: BodyList
+	b_curvs :: Body
+ } deriving Show
+
+instance Field MAB where
+	type FieldArgument MAB = Int
+	fromBinary n bin = do
+		(ret, rest) <- fromBinary n bin
+		ret' <- mab_ToMab ret
+		return (ret', rest)
+	toBinary n (MAB mab_ _) = toBinary n mab_
+
+-- mab_ToMab :: iMAB_ -> MAB
+mab_ToMab mab_ = do
+--	(ret, _) <- fromBinary (output_num_mab mab_) $
+	(ret, _) <- fromBinary 4 $
+		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
+	return $ MAB mab_ ret
+
+{-
+getPadding :: Field f => f -> Int
+getPadding :: Body -> Int
+getPadding f = fromJust $ do
+	str <- toBinary (error "bad") f
+	return $ 4 - length (str :: String) `mod` 4
+-}
+
 [binary|
 
-MAB deriving Show
+BodyList deriving Show
+
+arg :: Int
+
+(undefined, Just arg){[Body]}: body_list
+-- getPadding body_list: 0
+
+|]
+
+[binary|
+
+MAB_ deriving Show
 
 arg :: Int
 

@@ -14,6 +14,7 @@ import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian (BitsInt)
 import Control.Arrow
+import Control.Monad
 import Data.Monoid
 import Data.Time
 
@@ -39,11 +40,16 @@ writeICCP :: (Monad m, Functor m) => ICCPData -> m String
 writeICCP (ret, elems) = do
 	let	dups = duplicate [] (tags ret)
 		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
+		noDupTags = deleteIndexes dups (tags ret)
 	bin <- toBinary () ret
-	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
+--	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
+	bins <- zipWithM (\size dat -> toBinary size $ snd dat)
+		(map tag_element_size noDupTags) $
+			deleteIndexes dups elems
 --	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
-	let	bins' = zipWith addPadding bins pads
-	return $ mconcat (bin : bins') ++ replicate (filePadding ret) '\0'
+--	let	bins' = zipWith addPadding bins pads
+	let	bins' = bins
+	return $ mconcat (bin : bins') -- ++ replicate (filePadding ret) '\0'
 
 filePadding :: ICCP -> Int
 filePadding iccp = profile_size iccp -
@@ -137,16 +143,6 @@ ICCP deriving Show
 
 |]
 
-[binary|
-
-XYZ deriving Show
-
-4: xyz_X
-4: xyz_Y
-4: xyz_Z
-
-|]
-
 instance Field UTCTime where
 	type FieldArgument UTCTime = ()
 	fromBinary () = fmap (first timeToUTCTime) . fromBinary ()
@@ -200,234 +196,3 @@ type Element = (String, Body)
 
 getData :: (Monad m, Functor m, Binary b) => Tag -> b -> m (Body, b)
 getData (Tag _ offset size) = fromBinary size . snd . getBytes offset
-
-[binary|
-
-Body
-
-arg :: Int
-
-((), Just 4){String}: data_type
-4: 0
-(data_type, arg - 8){Elem}: data_body
-
-|]
-
-instance Show Body where
-	show dat = "Body (" ++ show (data_body dat) ++ ")"
-{-
-	show dat = "(Data " ++
-		show (data_type dat) ++ " " ++
-		"(" ++ show (data_body dat) ++ "))"
--}
-
-data Elem
-	= ElemCurv Curv
-	| ElemData Data
-	| ElemMFT2 MFT2
-	| ElemMAB  MAB
-	| ElemText Text2
-	| ElemXYZ XYZ2
-	| ElemDesc Desc
-	| ElemChad CHAD2
-	| ElemMluc MLUC2
-	| ElemMmod MMOD2
-	| ElemPara Para2
-	| ElemVCGT VCGT2
-	| ElemNDIN NDIN2
-	| ElemOthers String String
-	deriving Show
-
-instance Field Elem where
-	type FieldArgument Elem = (String, Int)
-	fromBinary ("curv", size) =
-		fmap (first ElemCurv) . fromBinary size
-	fromBinary ("data", size) =
-		fmap (first ElemData) . fromBinary size
-	fromBinary ("mft2", size) =
-		fmap (first ElemMFT2) . fromBinary size
-	fromBinary ("mAB ", size) =
-		fmap (first ElemMAB ) . fromBinary size
-	fromBinary ("XYZ ", size) =
-		fmap (first ElemXYZ) . fromBinary size
-	fromBinary ("sf32", size) =
-		fmap (first ElemChad) . fromBinary size
-	fromBinary ("text", size) =
-		fmap (first ElemText) . fromBinary size
-	fromBinary ("desc", size) =
-		fmap (first ElemDesc) . fromBinary size
-	fromBinary ("mluc", size) =
-		fmap (first ElemMluc) . fromBinary size
-	fromBinary ("mmod", size) =
-		fmap (first ElemMmod) . fromBinary size
-	fromBinary ("para", size) =
-		fmap (first ElemPara) . fromBinary size
-	fromBinary ("vcgt", size) =
-		fmap (first ElemVCGT) . fromBinary size
-	fromBinary ("ndin", size) =
---		fmap (first ElemNDIN) . fromBinary size
-		fmap (first $ ElemOthers "ndin") . fromBinary ((), Just size)
-	fromBinary (typ, size) =
-		fmap (first $ ElemOthers typ) . fromBinary ((), Just size)
-	toBinary (_, size) (ElemCurv dat) = toBinary size dat
-	toBinary (_, size) (ElemData dat) = toBinary size dat
-	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
-	toBinary (_, size) (ElemMAB  dat) = toBinary size dat
-	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
-	toBinary (_, size) (ElemChad dat) = toBinary size dat
-	toBinary (_, size) (ElemText dat) = toBinary size dat
-	toBinary (_, size) (ElemDesc dat) = toBinary size dat
-	toBinary (_, size) (ElemMluc dat) = toBinary size dat
-	toBinary (_, size) (ElemMmod dat) = toBinary size dat
-	toBinary (_, size) (ElemPara dat) = toBinary size dat
-	toBinary (_, size) (ElemVCGT dat) = toBinary size dat
-	toBinary (_, size) (ElemNDIN dat) = toBinary size dat
-	toBinary (_, size) (ElemOthers _ dat) = toBinary ((), Just size) dat
-
-[binary|
-
-Text2
-
-arg :: Int
-
-((), Just arg){String}: text
-
-|]
-
-instance Show Text2 where
-	show = text
-
-[binary|
-
-XYZ2 deriving Show
-
-arg :: Int
-
-{XYZ}: xyz
--- 4: xyz_X
--- 4: xyz_Y
--- 4: xyz_Z
-
-|]
-
-[binary|
-
-Desc deriving Show
-
-arg :: Int
-
-((), Just arg){String}: body_desc
-
-|]
-
-[binary|
-
-CHAD2 deriving Show
-
-arg :: Int
-
-4: chad2_a0
-4: chad2_a1
-4: chad2_a2
-4: chad2_a3
-4: chad2_a4
-4: chad2_a5
-4: chad2_a6
-4: chad2_a7
-4: chad2_a8
-
-|]
-
-[binary|
-
-MLUC2 deriving Show
-
-arg :: Int
-
-4: num_MLUC2
-4: 12
-((), Just num_MLUC2){[MLUC_RECORD2]}: record_MLUC2
-((), Just (arg - 12 * num_MLUC2 - 8)){String}: body_MLUC2
-
-|]
-
-[binary|
-
-MLUC_RECORD2 deriving Show
-
-((), Just 2){String}: lang_MLUC2
-((), Just 2){String}: country_MLUC2
-4: len_MLUC2
-4: offset_MLUC2
-
-|]
-
-[binary|
-
-MMOD2
-
-arg :: Int
-
-((), Just arg){String}: body_MMOD2
-
-|]
-
-instance Show MMOD2 where
-	show mmod = "(MMOD2 " ++
-		show (body_MMOD2 mmod) ++ ")"
-
-[binary|
-
-Para2
-
-arg :: Int
-
-2: functype_Para2
-2: 0
-4: g_Para2
-4: a_Para2
-4: b_Para2
-4: c_Para2
-4: d_Para2
-
-|]
-
-instance Show Para2 where
-	show para = "(Para2 " ++
-		show (functype_Para2 para) ++ " " ++
-		show (g_Para2 para) ++ " " ++
-		show (a_Para2 para) ++ " " ++
-		show (b_Para2 para) ++ " " ++
-		show (c_Para2 para) ++ " " ++
-		show (d_Para2 para) ++ ")"
-
-[binary|
-
-VCGT2 deriving Show
-
-arg :: Int
-
-4: 0
-2: hoge_VCGT2
-2: hage_VCGT2
-2: hige_VCGT2
-(1, Just (arg - 10)){[Int]}: body_VCGT2
--- (2, Just (arg `div` 2 - 7)){[Int]}: body_VCGT2
--- {Int}: some
--- (arg - ((arg `div` 2) * 2)): some
--- 1: 0
-
-|]
-
-[binary|
-
-NDIN2 deriving Show
-
-arg :: Int
-
-(4, Just 9){[Int]}: hoge_NDIN2
-(4, Just 3){[Int]}: hage_NDIN2
-(2, Just 3){[Int]}: hige_NDIN2
-(2, Just ((arg - 58) `div` 2)){[Int]}: body_NDIN2
-
-|]

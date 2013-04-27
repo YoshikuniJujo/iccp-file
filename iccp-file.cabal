@@ -29,6 +29,8 @@ source-repository	this
 library
     hs-source-dirs:	src
     exposed-modules:	File.Binary.ICCProfile
-    other-modules:	File.Binary.ICCProfile.TagTypes
+    other-modules:
+        File.Binary.ICCProfile.TagTypes
+        File.Binary.ICCProfile.TagTypes_yet
     build-depends:	base > 3 && < 5, binary-file, time
     ghc-options:	-Wall
