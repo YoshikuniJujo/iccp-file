@@ -20,6 +20,9 @@ import File.Binary.ICCProfile.TagTypes_yet
 import Control.Applicative
 import Control.Arrow
 
+type UInt16Number = Int
+type UInt32Number_ = Int
+
 getPadding :: Int -> Int
 getPadding n
 	| m <- n `mod` 4, m /= 0 = 4 - m
@@ -119,8 +122,8 @@ Curv deriving Show
 
 arg :: Int
 
-4: num_curv
-(2, Just num_curv){[Int]}: body_curv
+4{UInt32Number_}: num_curv
+(2, Just num_curv){[UInt16Number]}: body_curv
 
 |]
 
