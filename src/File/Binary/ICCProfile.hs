@@ -17,26 +17,27 @@ import Control.Arrow
 import Control.Monad
 import Data.Monoid
 import Data.Time
+import Control.Applicative
 
 import File.Binary.ICCProfile.TagTypes
 
 type ICCPData = (ICCP, [Element])
 
-readICCP :: (Monad m, Functor m, Binary b) => b -> m ICCPData
+readICCP :: (Monad m, Applicative m, Binary b) => b -> m ICCPData
 readICCP bin = do
 	(ret, _) <- fromBinary () bin
 	elems <- mapM (($ bin) . getElement') $ tags ret
 	return (ret, elems)
 
-tagTypes :: (Monad m, Functor m, Binary b) => b -> m [String]
+tagTypes :: (Monad m, Applicative m, Binary b) => b -> m [String]
 tagTypes bin = do
 	(ret, _) <- fromBinary () bin
 	tts <- mapM (($ bin) . getTagTypeName) $ tags ret
 	return $ map tag_type_name tts
 
--- writeICCP :: (Monad m, Functor m, Binary b) => ICCPData -> m b
+-- writeICCP :: (Monad m, Applicative m, Binary b) => ICCPData -> m b
 -- writeICCP :: ICCPData -> IO String
-writeICCP :: (Monad m, Functor m) => ICCPData -> m String
+writeICCP :: (Monad m, Applicative m) => ICCPData -> m String
 writeICCP (ret, elems) = do
 	let	dups = duplicate [] (tags ret)
 --		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
@@ -57,7 +58,7 @@ filePadding iccp = profile_size iccp -
 	where
 	lastTag = last $ tags iccp
 
-fromElems :: (Monad m, Functor m) => [Element] -> m [String]
+fromElems :: (Monad m, Applicative m) => [Element] -> m [String]
 fromElems = mapM $ toBinary undefined . snd
 
 {-
@@ -92,12 +93,12 @@ sameOffsetSize (Tag _ offset1 size1) (Tag _ offset2 size2) =
 sizes :: [Tag] -> [Int]
 sizes = map tag_element_size
 
-getElement' :: (Monad m, Functor m, Binary b) => Tag -> b -> m Element
+getElement' :: (Monad m, Applicative m, Binary b) => Tag -> b -> m Element
 getElement' t@(Tag tn _ _) str = do
 	(d, _) <- getData t str
 	return $ edata tn d
 
-getTagTypeName :: (Monad m, Functor m, Binary b) => Tag -> b -> m TagType
+getTagTypeName :: (Monad m, Applicative m, Binary b) => Tag -> b -> m TagType
 getTagTypeName (Tag _ offset _) = fmap fst . fromBinary () . snd . getBytes offset
 
 [binary|
@@ -196,5 +197,5 @@ edata = (,)
 
 type Element = (String, Body)
 
-getData :: (Monad m, Functor m, Binary b) => Tag -> b -> m (Body, b)
+getData :: (Monad m, Applicative m, Binary b) => Tag -> b -> m (Body, b)
 getData (Tag _ offset size) = fromBinary size . snd . getBytes offset

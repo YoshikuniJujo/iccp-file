@@ -21,9 +21,28 @@ import Control.Applicative
 import Control.Arrow
 
 import Data.Word
+import Data.Fixed
+
+data S15Fixed16Number = S15Fixed16Number (Fixed B16)
+
+instance Show S15Fixed16Number where
+	show (S15Fixed16Number f) = show f
+
+data B16
+
+instance HasResolution B16 where
+	resolution _ = 2 ^ (16 :: Int)
+
+instance Field S15Fixed16Number where
+	type FieldArgument S15Fixed16Number = ()
+	fromBinary () b = first (S15Fixed16Number . (/ 2 ^ (16 :: Int)) .
+		(fromIntegral :: Int -> Fixed B16)) <$> fromBinary 4 b
+	toBinary () (S15Fixed16Number f) = toBinary 4 $
+		(floor $ f * 2 ^ (16 :: Int) :: Int)
 
 type UInt16Number = Int
 type UInt32Number_ = Int
+type UInt8Number = Int
 
 getPadding :: Int -> Int
 getPadding n
@@ -157,16 +176,16 @@ MFT2 deriving Show
 
 arg :: Int
 
-1: input_num_mft2
-1: output_num_mft2
-1: clut_num_mft2
+1{UInt8Number}: input_num_mft2
+1{UInt8Number}: output_num_mft2
+1{UInt8Number}: clut_num_mft2
 1: 0
 {Matrix33}: matrix_mft2
-2: input_table_n_mft2
-2: output_table_n_mft2
-(2, Just $ input_table_n_mft2 * input_num_mft2){[Int]}: input_table_mft2
-(2, Just $ clut_num_mft2 ^ input_num_mft2 * output_num_mft2){[Int]}: clut_table_mft2
-(2, Just $ output_table_n_mft2 * output_num_mft2){[Int]}: output_table_mft2
+2{UInt16Number}: input_table_n_mft2
+2{UInt16Number}: output_table_n_mft2
+(2, Just $ input_table_n_mft2 * input_num_mft2){[UInt16Number]}: input_table_mft2
+(2, Just $ clut_num_mft2 ^ input_num_mft2 * output_num_mft2){[UInt16Number]}: clut_table_mft2
+(2, Just $ output_table_n_mft2 * output_num_mft2){[UInt16Number]}: output_table_mft2
 
 |]
 
@@ -174,15 +193,15 @@ arg :: Int
 
 Matrix33 deriving Show
 
-4: e1_matrix33
-4: e2_matrix33
-4: e3_matrix33
-4: e4_matrix33
-4: e5_matrix33
-4: e6_matrix33
-4: e7_matrix33
-4: e8_matrix33
-4: e9_matrix33
+{S15Fixed16Number}: e1_matrix33
+{S15Fixed16Number}: e2_matrix33
+{S15Fixed16Number}: e3_matrix33
+{S15Fixed16Number}: e4_matrix33
+{S15Fixed16Number}: e5_matrix33
+{S15Fixed16Number}: e6_matrix33
+{S15Fixed16Number}: e7_matrix33
+{S15Fixed16Number}: e8_matrix33
+{S15Fixed16Number}: e9_matrix33
 
 |]
 
@@ -203,7 +222,7 @@ instance Field MAB where
 		return (ret', rest)
 	toBinary n (MAB mab_ _ _ _) = toBinary n mab_
 
-mab_ToMab :: (Monad m, Functor m) => MAB_ -> m MAB
+mab_ToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
 mab_ToMab mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
 	(bcurvs, _) <- fromBinary (undefined, Just $ output_num_mab mab_) $
