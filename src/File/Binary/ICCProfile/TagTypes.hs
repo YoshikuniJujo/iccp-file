@@ -20,6 +20,8 @@ import File.Binary.ICCProfile.TagTypes_yet
 import Control.Applicative
 import Control.Arrow
 
+import Data.Word
+
 type UInt16Number = Int
 type UInt32Number_ = Int
 
@@ -134,9 +136,20 @@ Data deriving Show
 arg :: Int
 
 4: type_data
-((), Just (arg - 4)){String}: body_data
+-- ((), Just (arg - 4)){String}: body_data
+(type_data, arg - 4){DataBody}: body_data
 
 |]
+
+data DataBody = BinData [Word8] | ASCIIData String deriving Show
+
+instance Field DataBody where
+	type FieldArgument DataBody = (Int, Int)
+	fromBinary (0, n) b = first ASCIIData <$> fromBinary ((), Just n) b
+	fromBinary (1, n) b = first BinData <$> fromBinary ((), Just n) b
+	fromBinary _ _ = error "bad data type"
+	toBinary (_, _) (ASCIIData ad) = toBinary undefined ad
+	toBinary (_, _) (BinData bd) = toBinary undefined bd
 
 [binary|
 
