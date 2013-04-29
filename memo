@@ -123,3 +123,10 @@ uInt16Number は Int でいいかな。
 でもいちおう type UInt16Number = Int とでもしておこうかな。
 uInt32Number はどうしようかな。
 たとえば type UInt32Number = Word32 かあるいは = Integer とかかな。
+
+2013.04.30 Tue.
+
+n 次元配列的なものを Haskell ではどう書けるか。
+
+ひとつ考えられるのは木構造にすることか。
+深さを統一することはできないだろうか。

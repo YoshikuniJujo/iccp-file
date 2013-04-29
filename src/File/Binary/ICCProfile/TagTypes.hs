@@ -245,14 +245,14 @@ MAB_ deriving Show
 
 arg :: Int
 
-1: input_num_mab
-1: output_num_mab
+1{UInt8Number}: input_num_mab
+1{UInt8Number}: output_num_mab
 2: 0
-4: b_offset_mab
-4: matrix_offset_mab
-4: m_offset_mab
-4: clut_offset_mab
-4: a_offset_mab
+4{UInt32Number_}: b_offset_mab
+4{UInt32Number_}: matrix_offset_mab
+4{UInt32Number_}: m_offset_mab
+4{UInt32Number_}: clut_offset_mab
+4{UInt32Number_}: a_offset_mab
 ((), Just $ arg - 24){String}: body_mab
 
 |]
