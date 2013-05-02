@@ -79,14 +79,6 @@ instance Short MFT2 where
 
 instance Short MAB where
 	short mab_ = "MAB " ++ "{" ++
-		"i = " ++ show (input_num_mab mab) ++ ", " ++
-		"o = " ++ show (output_num_mab mab) ++ ", " ++
-		"b_offset = " ++ show (b_offset_mab mab) ++ ", " ++
-		"matrix_offset = " ++ show (matrix_offset_mab mab) ++ ", " ++
-		"m_offset = " ++ show (m_offset_mab mab) ++ ", " ++
-		"clut_offset = " ++ show (clut_offset_mab mab) ++ ", " ++
-		"a_offset = " ++ show (a_offset_mab mab) ++ ", " ++
-		"body_mab = " ++ dotdot 500 20 (show $ body_mab mab) ++ ", " ++
 		"bcurvs = " ++ short bcs ++ ", " ++
 		"matrix = " ++ show matrix ++ ", " ++
 		"mcurvs = " ++ short mcs ++ ", " ++
@@ -94,7 +86,7 @@ instance Short MAB where
 		"acurvs = " ++ short acs ++
 		"}"
 		where
-		MAB mab bcs matrix mcs clut acs = mab_
+		MAB bcs matrix mcs clut acs = mab_
 
 instance Short MAB_CLUT where
 	short mc = "MAB_CLUT{" ++
