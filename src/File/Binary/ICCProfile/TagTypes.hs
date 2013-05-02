@@ -8,6 +8,7 @@ module File.Binary.ICCProfile.TagTypes (
 	MFT2(..),
 	MAB(..),
 	MAB_(..),
+	MAB_CLUT(..),
 	module File.Binary.ICCProfile.TagTypes_yet
 ) where
 
@@ -43,6 +44,7 @@ instance Field S15Fixed16Number where
 type UInt16Number = Int
 type UInt32Number_ = Int
 type UInt8Number = Int
+type UInt8Or16Number = Int
 
 getPadding :: Int -> Int
 getPadding n
@@ -207,11 +209,11 @@ Matrix33 deriving Show
 
 data MAB = MAB {
 	mab__mab :: MAB_,
---	b_curvs :: BodyList
 	b_curvs_mab :: [Body],
 	matrix_mab :: Maybe Matrix33,
-	m_curvs_mab :: Maybe [Body] -- ,
---	clut_mab :: MAB_CLUT
+	m_curvs_mab :: [Body],
+	clut_mab :: Maybe MAB_CLUT,
+	a_curvs_mab  :: [Body]
  } deriving Show
 
 instance Field MAB where
@@ -220,7 +222,7 @@ instance Field MAB where
 		(ret, rest) <- fromBinary n bin
 		ret' <- mab_ToMab ret
 		return (ret', rest)
-	toBinary n (MAB mab_ _ _ _) = toBinary n mab_
+	toBinary n (MAB mab_ _ _ _ _ _) = toBinary n mab_
 
 mab_ToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
 mab_ToMab mab_ = do
@@ -229,15 +231,24 @@ mab_ToMab mab_ = do
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
 	let	matrix_offset = matrix_offset_mab mab_
 		m_offset = m_offset_mab mab_
+		clut_offset = clut_offset_mab mab_
+		input_num = input_num_mab mab_
+		output_num = output_num_mab mab_
+		a_offset = a_offset_mab mab_
 	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
 		else first Just <$>
 			fromBinary () (snd $ getBytes (matrix_offset - 32) $
 				body_mab mab_)
-	(mcurvs, _) <- if m_offset == 0 then return (Nothing, undefined) else
-		first Just <$> fromBinary (undefined, Just $ output_num_mab mab_)
+	(mcurvs, _) <- if m_offset == 0 then return ([], undefined) else
+		fromBinary (undefined, Just $ output_num_mab mab_)
 			(snd $ getBytes (m_offset_mab mab_ - 32) $ body_mab mab_)
---	(clut, _)
-	return $ MAB mab_ bcurvs matrix mcurvs
+	(clut, _) <- if clut_offset == 0 then return (Nothing, undefined) else
+		first Just <$> fromBinary (input_num, output_num)
+			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
+	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
+		fromBinary (undefined, Just $ input_num)
+			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
+	return $ MAB mab_ bcurvs matrix mcurvs clut acurvs
 
 [binary|
 
@@ -266,8 +277,8 @@ arg :: (Int, Int)
 (1, Just 16){[Int]}: nums_mab_clut
 1: byte_num_mab_clut
 3: 0
-(byte_num_mab_clut, Just $ product (take (fst arg) nums_mab_clut) * snd arg):
-	body_mab_clut
+(byte_num_mab_clut, Just $ product (take (fst arg) nums_mab_clut) * snd arg)
+	{[UInt8Or16Number]}: body_mab_clut
 
 |]
 

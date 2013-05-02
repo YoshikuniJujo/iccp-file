@@ -89,10 +89,21 @@ instance Short MAB where
 		"body_mab = " ++ dotdot 500 20 (show $ body_mab mab) ++ ", " ++
 		"bcurvs = " ++ short bcs ++ ", " ++
 		"matrix = " ++ show matrix ++ ", " ++
-		"mcurvs = " ++ short mcs ++
+		"mcurvs = " ++ short mcs ++ ", " ++
+		"clut = " ++ short clut ++ ", " ++
+		"acurvs = " ++ short acs ++
 		"}"
 		where
-		MAB mab bcs matrix mcs = mab_
+		MAB mab bcs matrix mcs clut acs = mab_
+
+instance Short MAB_CLUT where
+	short mc = "MAB_CLUT{" ++
+		"nums = " ++ show nums ++ ", " ++
+		"byte = " ++ show byte ++ ", " ++
+		"body = " ++ dotdot 100 100 (show body) ++
+		"}"
+		where
+		MAB_CLUT nums byte body = mc
 
 instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t

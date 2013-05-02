@@ -15,3 +15,8 @@
 	というか、readICCP2 をそういう仕様に変えよう
 7. s15Fixed16Number, u8Fixed8Number 等をちゃんと Fixed に変換するようにしよう
 	読み込み時にしてしまっていいかもしれない
+8. data MAB = MAB {
+	i :: ...,
+	o :: ...,
+	b_curvs :: ...}
+	のようにするべきだろう。
