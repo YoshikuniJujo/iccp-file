@@ -7,7 +7,9 @@ module File.Binary.ICCProfile (
 	duplicate, fromElems, filePadding, tagTypes,
 
 	MLUC2(..),
-	MMOD2(..), Text2(..), Elem(..), Body(..)
+	MMOD2(..), Text2(..), Elem(..), Body(..),
+
+	Unicode16BE(..),
 ) where
 
 import File.Binary

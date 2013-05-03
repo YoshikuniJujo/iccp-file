@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, EmptyDataDecls, PatternGuards #-}
 
 module File.Binary.ICCProfile.TagTypes (
 	Body(..),

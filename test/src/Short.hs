@@ -127,10 +127,11 @@ instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t
 
 instance Short MLUC2 where
-	short mluc = "(MLUC2 " ++
+	short mluc = "MLUC2 " ++
 		show (num_MLUC2 mluc) ++ " " ++
-		dotdot 20 20 (show $ record_MLUC2 mluc) ++ " " ++
-		dotdot 40 40 (show $ body_MLUC2 mluc) ++ ")"
+		show (record_MLUC2 mluc) ++ " " ++
+--		dotdot 40 40 (show $ record_MLUC2 mluc) ++ " " ++
+		"(" ++ dotdot 70 70 (show $ body_MLUC2 mluc) ++ ")"
 
 instance Short MMOD2 where
 	short mmod = "(MMOD2 " ++
