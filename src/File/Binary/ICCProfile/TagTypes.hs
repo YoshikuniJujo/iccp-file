@@ -44,7 +44,7 @@ instance Field S15Fixed16Number where
 	type FieldArgument S15Fixed16Number = ()
 	fromBinary () b = first (S15Fixed16Number . (/ 2 ^ (16 :: Int)) .
 		(fromIntegral :: Int -> Fixed B16)) <$> fromBinary 4 b
-	toBinary () (S15Fixed16Number f) = toBinary 4
+	toBinary () (S15Fixed16Number f) = toBinary 4 $
 		(floor $ f * 2 ^ (16 :: Int) :: Int)
 
 type UInt16Number = Int
@@ -220,26 +220,28 @@ Matrix33 deriving Show
 type MBA_ = MAB_
 
 data MBA = MBA {
-	bCurvsMba :: [Body],
-	matrixMba :: Maybe Matrix33,
-	mCurvsMba :: [Body],
-	clutMba :: Maybe MAB_CLUT,
-	aCurvsMba  :: [Body]
+--	mab__mab :: MAB_,
+	b_curvs_mba :: [Body],
+	matrix_mba :: Maybe Matrix33,
+	m_curvs_mba :: [Body],
+	clut_mba :: Maybe MAB_CLUT,
+	a_curvs_mba  :: [Body]
  } deriving Show
 
 data MAB = MAB {
-	bCurvsMab :: [Body],
-	matrixMab :: Maybe Matrix33,
-	mCurvsMab :: [Body],
-	clutMab :: Maybe MAB_CLUT,
-	aCurvsMab  :: [Body]
+--	mab__mab :: MAB_,
+	b_curvs_mab :: [Body],
+	matrix_mab :: Maybe Matrix33,
+	m_curvs_mab :: [Body],
+	clut_mab :: Maybe MAB_CLUT,
+	a_curvs_mab  :: [Body]
  } deriving Show
 
 instance Field MAB where
 	type FieldArgument MAB = Int
 	fromBinary n bin = do
 		(ret, rest) <- fromBinary n bin
-		ret' <- mabToMab ret
+		ret' <- mab_ToMab ret
 		return (ret', rest)
 	toBinary n mab = toBinary n =<< mabToMab_ mab
 
@@ -247,19 +249,19 @@ instance Field MBA where
 	type FieldArgument MBA = Int
 	fromBinary n bin = do
 		(ret, rest) <- fromBinary n bin
-		ret' <- mbaToMba ret
+		ret' <- mba_ToMba ret
 		return (ret', rest)
 
 mabToMab_ :: (Monad m, Applicative m) => MAB -> m MAB_
 mabToMab_ mab = do
-	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (bCurvsMab mab)
+	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (b_curvs_mab mab)
 	matrix <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ matrixMab mab
-	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (mCurvsMab mab)
+		(fmap to4Bytes . toBinary undefined) $ matrix_mab mab
+	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (m_curvs_mab mab)
 	clut <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ clutMab mab
-	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (aCurvsMab mab)
-	return MAB_ {
+		(fmap to4Bytes . toBinary undefined) $ clut_mab mab
+	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (a_curvs_mab mab)
+	return $ MAB_ {
 		b_offset_mab = if null bcurvs then 0 else 32,
 		matrix_offset_mab = if null matrix then 0 else 32 + length bcurvs,
 		m_offset_mab = if null mcurvs then 0 else 32 + length bcurvs +
@@ -268,8 +270,8 @@ mabToMab_ mab = do
 			length matrix + length mcurvs,
 		a_offset_mab = if null acurvs then 0 else 32 + length bcurvs +
 			length matrix + length mcurvs + length clut,
-		input_num_mab_ = length $ aCurvsMab mab,
-		output_num_mab_ = length $ bCurvsMab mab,
+		input_num_mab_ = length $ a_curvs_mab mab,
+		output_num_mab_ = length $ b_curvs_mab mab,
 		body_mab = bcurvs ++ matrix ++ mcurvs ++ clut ++ acurvs
 	 }
 
@@ -280,18 +282,17 @@ to4Bytes str
 	where
 	l = length str `mod` 4
 
-mabToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
-mabToMab mab_@MAB_ {
-	matrix_offset_mab = matrix_offset,
-	m_offset_mab = m_offset,
-	clut_offset_mab = clut_offset,
-	input_num_mab_ = input_num,
-	output_num_mab_ = output_num,
-	a_offset_mab = a_offset
- } = do
+mab_ToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
+mab_ToMab mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
 	(bcurvs, _) <- fromBinary (undefined, Just $ output_num_mab_ mab_) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
+	let	matrix_offset = matrix_offset_mab mab_
+		m_offset = m_offset_mab mab_
+		clut_offset = clut_offset_mab mab_
+		input_num = input_num_mab_ mab_
+		output_num = output_num_mab_ mab_
+		a_offset = a_offset_mab mab_
 	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
 		else first Just <$>
 			fromBinary () (snd $ getBytes (matrix_offset - 32) $
@@ -303,15 +304,21 @@ mabToMab mab_@MAB_ {
 		first Just <$> fromBinary (input_num, output_num)
 			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
 	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just input_num)
+		fromBinary (undefined, Just $ input_num)
 			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
 	return $ MAB bcurvs matrix mcurvs clut acurvs
 
-mbaToMba :: (Monad m, Applicative m) => MBA_ -> m MBA
-mbaToMba mab_ = do
+mba_ToMba :: (Monad m, Applicative m) => MBA_ -> m MBA
+mba_ToMba mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
 	(bcurvs, _) <- fromBinary (undefined, Just $ input_num_mab_ mab_) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
+	let	matrix_offset = matrix_offset_mab mab_
+		m_offset = m_offset_mab mab_
+		clut_offset = clut_offset_mab mab_
+		input_num = input_num_mab_ mab_
+		output_num = output_num_mab_ mab_
+		a_offset = a_offset_mab mab_
 	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
 		else first Just <$>
 			fromBinary () (snd $ getBytes (matrix_offset - 32) $
@@ -323,16 +330,9 @@ mbaToMba mab_ = do
 		first Just <$> fromBinary (input_num, output_num)
 			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
 	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just output_num)
+		fromBinary (undefined, Just $ output_num)
 			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
 	return $ MBA bcurvs matrix mcurvs clut acurvs
-	where
-	matrix_offset = matrix_offset_mab mab_
-	m_offset = m_offset_mab mab_
-	clut_offset = clut_offset_mab mab_
-	input_num = input_num_mab_ mab_
-	output_num = output_num_mab_ mab_
-	a_offset = a_offset_mab mab_
 
 [binary|
 
@@ -376,13 +376,13 @@ instance Field Unicode16BE where
 -- instance Field MLUC where
 
 data MLUC = MLUC {
-	mlucBody :: [MLUC_RECORD]
+	mluc_body :: [MLUC_RECORD]
  } deriving Show
 
 data MLUC_RECORD = MLUC_RECORD deriving Show
 
-mlucToMluc :: MLUC_ -> MLUC
-mlucToMluc mluc_ = MLUC {}
+mluc_ToMluc :: MLUC_ -> MLUC
+mluc_ToMluc mluc_ = MLUC {}
 
 getEachMLUC :: (Monad m, Applicative m) =>
 	Int -> MLUC_RECORD2 -> BS.ByteString -> m String
