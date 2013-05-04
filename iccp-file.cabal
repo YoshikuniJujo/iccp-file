@@ -32,5 +32,5 @@ library
     other-modules:
         File.Binary.ICCProfile.TagTypes
         File.Binary.ICCProfile.TagTypes_yet
-    build-depends:	base > 3 && < 5, binary-file, time, text
+    build-depends:	base > 3 && < 5, binary-file, time, text, bytestring
     ghc-options:	-Wall

@@ -10,6 +10,8 @@ module File.Binary.ICCProfile.TagTypes (
 	MBA(..),
 	MAB_(..),
 	MAB_CLUT(..),
+	MLUC_(..),
+	Unicode16BE(..),
 	module File.Binary.ICCProfile.TagTypes_yet
 ) where
 
@@ -24,6 +26,9 @@ import Control.Arrow
 
 import Data.Word
 import Data.Fixed
+import Data.Text.Encoding
+import Data.Text (pack, unpack)
+import qualified Data.ByteString as BS
 
 data S15Fixed16Number = S15Fixed16Number (Fixed B16)
 
@@ -83,11 +88,11 @@ data Elem
 	| ElemMFT2 MFT2
 	| ElemMAB  MAB
 	| ElemMBA  MBA
+	| ElemMluc MLUC_
 	| ElemText Text2
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
 	| ElemChad CHAD2
-	| ElemMluc MLUC2
 	| ElemMmod MMOD2
 	| ElemPara Para2
 	| ElemVCGT VCGT2
@@ -361,4 +366,54 @@ arg :: (Int, Int)
 
 |]
 
+data Unicode16BE = Unicode16BE String deriving Show
 
+instance Field Unicode16BE where
+	type FieldArgument Unicode16BE = Int
+	fromBinary n b = first (Unicode16BE . unpack . decodeUtf16BE) <$> fromBinary n b
+	toBinary n (Unicode16BE t) = toBinary n $ encodeUtf16BE $ pack t
+
+-- instance Field MLUC where
+
+data MLUC = MLUC {
+	mluc_body :: [MLUC_RECORD]
+ } deriving Show
+
+data MLUC_RECORD = MLUC_RECORD deriving Show
+
+mluc_ToMluc :: MLUC_ -> MLUC
+mluc_ToMluc mluc_ = MLUC {}
+
+getEachMLUC :: (Monad m, Applicative m) =>
+	Int -> MLUC_RECORD2 -> BS.ByteString -> m String
+getEachMLUC n rec bs = do
+	(ret, _) <- fromBinary len $ snd $ getBytes offset bs
+	return $ unpack $ decodeUtf16BE ret
+	where
+	len = len_MLUC_ rec
+	offset = offset_MLUC_ rec - 12 * n - 8
+
+[binary|
+
+MLUC_ deriving Show
+
+arg :: Int
+
+4: num_MLUC_
+4: 12
+((), Just num_MLUC_){[MLUC_RECORD2]}: record_MLUC_
+-- ((), Just (arg - 12 * num_MLUC_ - 8)){String}: body_MLUC_
+arg - 12 * num_MLUC_ - 8{Unicode16BE}: body_MLUC_
+
+|]
+
+[binary|
+
+MLUC_RECORD2 deriving Show
+
+((), Just 2){String}: lang_MLUC_
+((), Just 2){String}: country_MLUC_
+4: len_MLUC_
+4: offset_MLUC_
+
+|]

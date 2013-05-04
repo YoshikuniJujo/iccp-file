@@ -23,7 +23,7 @@ main = do
 		then putStrLn $ short $ head curvs
 		else putStrLn $ short curvs
 	when ("-s" `notElem` flags) $ print $ head curvs
-	when (tagType == "mluc") $ putStrLn $ (\(Unicode16BE t) -> t) $ body_MLUC2 $
+	when (tagType == "mluc") $ putStrLn $ (\(Unicode16BE t) -> t) $ body_MLUC_ $
 		(\(ElemMluc mluc) -> mluc) $ data_body $ snd $ head curvs
 
 public :: [String]
