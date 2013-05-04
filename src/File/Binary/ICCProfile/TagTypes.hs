@@ -46,7 +46,7 @@ instance Field S15Fixed16Number where
 	type FieldArgument S15Fixed16Number = ()
 	fromBinary () b = first (S15Fixed16Number . (/ 2 ^ (16 :: Int)) .
 		(fromIntegral :: Int -> Fixed B16)) <$> fromBinary 4 b
-	toBinary () (S15Fixed16Number f) = toBinary 4 $
+	toBinary () (S15Fixed16Number f) = toBinary 4
 		(floor $ f * 2 ^ (16 :: Int) :: Int)
 
 type UInt16Number = Int
@@ -217,31 +217,31 @@ Matrix33 deriving Show
 
 data MAB = MAB {
 --	mab__mab :: MAB_,
-	b_curvs_mab :: [Body],
-	matrix_mab :: Maybe Matrix33,
-	m_curvs_mab :: [Body],
-	clut_mab :: Maybe MAB_CLUT,
-	a_curvs_mab  :: [Body]
+	bCurvsMab :: [Body],
+	matrixMab :: Maybe Matrix33,
+	mCurvsMab :: [Body],
+	clutMab :: Maybe MAB_CLUT,
+	aCurvsMab  :: [Body]
  } deriving Show
 
 instance Field MAB where
 	type FieldArgument MAB = Int
 	fromBinary n bin = do
 		(ret, rest) <- fromBinary n bin
-		ret' <- mab_ToMab ret
+		ret' <- mabToMab ret
 		return (ret', rest)
 	toBinary n mab = toBinary n =<< mabToMab_ mab
 
 mabToMab_ :: (Monad m, Applicative m) => MAB -> m MAB_
 mabToMab_ mab = do
-	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (b_curvs_mab mab)
+	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (bCurvsMab mab)
 	matrix <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ matrix_mab mab
-	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (m_curvs_mab mab)
+		(fmap to4Bytes . toBinary undefined) $ matrixMab mab
+	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (mCurvsMab mab)
 	clut <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ clut_mab mab
-	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (a_curvs_mab mab)
-	return $ MAB_ {
+		(fmap to4Bytes . toBinary undefined) $ clutMab mab
+	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (aCurvsMab mab)
+	return MAB_ {
 		b_offset_mab = if null bcurvs then 0 else 32,
 		matrix_offset_mab = if null matrix then 0 else 32 + length bcurvs,
 		m_offset_mab = if null mcurvs then 0 else 32 + length bcurvs +
@@ -250,8 +250,8 @@ mabToMab_ mab = do
 			length matrix + length mcurvs,
 		a_offset_mab = if null acurvs then 0 else 32 + length bcurvs +
 			length matrix + length mcurvs + length clut,
-		input_num_mab_ = length $ a_curvs_mab mab,
-		output_num_mab_ = length $ b_curvs_mab mab,
+		input_num_mab_ = length $ aCurvsMab mab,
+		output_num_mab_ = length $ bCurvsMab mab,
 		body_mab = bcurvs ++ matrix ++ mcurvs ++ clut ++ acurvs
 	 }
 
@@ -262,8 +262,8 @@ to4Bytes str
 	where
 	l = length str `mod` 4
 
-mab_ToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
-mab_ToMab mab_ = do
+mabToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
+mabToMab mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
 	(bcurvs, _) <- fromBinary (undefined, Just $ output_num_mab_ mab_) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
@@ -284,7 +284,7 @@ mab_ToMab mab_ = do
 		first Just <$> fromBinary (input_num, output_num)
 			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
 	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just $ input_num)
+		fromBinary (undefined, Just input_num)
 			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
 	return $ MAB bcurvs matrix mcurvs clut acurvs
 
