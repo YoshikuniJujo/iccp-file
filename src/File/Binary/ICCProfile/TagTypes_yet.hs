@@ -5,10 +5,6 @@ module File.Binary.ICCProfile.TagTypes_yet where
 import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian ()
-import Data.Text.Encoding
-import Data.Text
-import Control.Arrow
-import Control.Applicative
 
 [binary|
 
@@ -95,13 +91,6 @@ arg :: Int
 
 |]
 
-data Unicode16BE = Unicode16BE String deriving Show
-
-instance Field Unicode16BE where
-	type FieldArgument Unicode16BE = Int
-	fromBinary n b = first (Unicode16BE . unpack . decodeUtf16BE) <$> fromBinary n b
-	toBinary n (Unicode16BE t) = toBinary n $ encodeUtf16BE $ pack t
-
 [binary|
 
 MLUC2 deriving Show
@@ -111,8 +100,7 @@ arg :: Int
 4: num_MLUC2
 4: 12
 ((), Just num_MLUC2){[MLUC_RECORD2]}: record_MLUC2
--- ((), Just (arg - 12 * num_MLUC2 - 8)){String}: body_MLUC2
-arg - 12 * num_MLUC2 - 8{Unicode16BE}: body_MLUC2
+((), Just (arg - 12 * num_MLUC2 - 8)){String}: body_MLUC2
 
 |]
 
