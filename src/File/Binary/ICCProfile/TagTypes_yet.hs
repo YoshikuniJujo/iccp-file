@@ -91,6 +91,7 @@ arg :: Int
 
 |]
 
+{-
 [binary|
 
 MLUC2 deriving Show
@@ -114,6 +115,7 @@ MLUC_RECORD2 deriving Show
 4: offset_MLUC2
 
 |]
+-}
 
 [binary|
 

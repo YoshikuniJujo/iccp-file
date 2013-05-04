@@ -9,6 +9,9 @@ module File.Binary.ICCProfile.TagTypes (
 	MAB(..),
 	MAB_(..),
 	MAB_CLUT(..),
+	MLUC_Pre(..),
+	MLUC(..),
+	MLUC_RECORD(..),
 	module File.Binary.ICCProfile.TagTypes_yet
 ) where
 
@@ -23,6 +26,11 @@ import Control.Arrow
 
 import Data.Word
 import Data.Fixed
+
+import qualified Data.Text as Text
+import Data.Text.Encoding
+
+import qualified Data.ByteString as BS
 
 data S15Fixed16Number = S15Fixed16Number (Fixed B16)
 
@@ -85,7 +93,7 @@ data Elem
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
 	| ElemChad CHAD2
-	| ElemMluc MLUC2
+	| ElemMluc MLUC
 	| ElemMmod MMOD2
 	| ElemPara Para2
 	| ElemVCGT VCGT2
@@ -313,3 +321,103 @@ arg :: (Int, Int)
 |]
 
 
+
+data Unicode16BE = Unicode16BE String deriving Show
+
+instance Field Unicode16BE where
+	type FieldArgument Unicode16BE = Int
+	fromBinary n b = first (Unicode16BE . Text.unpack . decodeUtf16BE) <$> fromBinary n b
+	toBinary n (Unicode16BE t) = toBinary n $ encodeUtf16BE $ Text.pack t
+
+data MLUC = MLUC {
+	mlucBody :: [MLUC_RECORD]
+ } deriving Show
+
+data MLUC_RECORD = MLUC_RECORD {
+	langMLUC :: String,
+	countryMLUC :: String,
+	bodyMLUC :: String
+ } deriving Show
+
+instance Field MLUC where
+	type FieldArgument MLUC = Int
+	fromBinary n bs = do
+		(ret, rest) <- fromBinary n bs
+		ret' <- mlucPreToMluc ret
+		return (ret', rest)
+	toBinary n = toBinary n . mlucToMlucPre
+
+mlucToMlucPre :: MLUC -> MLUC_Pre
+mlucToMlucPre (MLUC mlucrs) =
+	uncurry (MLUC_Pre $ length mlucrs) (getRecords (length mlucrs) mlucrs)
+
+getRecords :: Int -> [MLUC_RECORD] -> ([MLUC_RECORD2], BS.ByteString)
+getRecords num mlucrs = let
+	(langs, dats) = unzip $ map fromMLUCRecord mlucrs
+	offsets = getOffsets (12 * num + 16) dats
+	lens = map BS.length dats
+	body = getMLUCBody dats in
+	(zipWith3 (uncurry MLUC_RECORD2) langs lens offsets, body)
+	
+
+getMLUCBody :: [BS.ByteString] -> BS.ByteString
+getMLUCBody = BS.concat
+
+getOffsets :: Int -> [BS.ByteString] -> [Int]
+getOffsets _ [] = []
+getOffsets n0 (dat : dats) = n0 : getOffsets (n0 + BS.length dat) dats
+
+fromMLUCRecord :: MLUC_RECORD -> ((String, String), BS.ByteString)
+fromMLUCRecord (MLUC_RECORD lang country dat) =
+	((lang, country), encodeUtf16BE $ Text.pack dat)
+
+-- getOffsets :: Int -> [MLUC_RECORD] -> [Int]
+-- getOffsets n mlucr
+--	offset = offset_MLUC_ rec - 12 * n - 16
+
+mlucPreToMluc :: (Monad m, Applicative m) => MLUC_Pre -> m MLUC
+mlucPreToMluc MLUC_Pre {
+	num_MLUC_ = num,
+	record_MLUC_ = records,
+	body_MLUC_ = bodys
+ } = MLUC <$> mapM (flip (mkMLUCRecord num) bodys) records
+
+mkMLUCRecord :: (Monad m, Applicative m) =>
+	Int -> MLUC_RECORD2 -> BS.ByteString -> m MLUC_RECORD
+mkMLUCRecord n rec bs =
+	MLUC_RECORD (lang_MLUC_ rec) (country_MLUC_ rec) <$> getEachMLUC n rec bs
+
+getEachMLUC :: (Monad m, Applicative m) =>
+	Int -> MLUC_RECORD2 -> BS.ByteString -> m String
+getEachMLUC n rec bs = do
+	(ret, _) <- fromBinary len $ snd $ getBytes offset bs
+	return $ Text.unpack $ decodeUtf16BE ret
+	where
+	len = len_MLUC_ rec
+	offset = offset_MLUC_ rec - 12 * n - 16
+
+[binary|
+
+MLUC_Pre deriving Show
+
+arg :: Int
+
+4: num_MLUC_
+4: 12
+((), Just num_MLUC_){[MLUC_RECORD2]}: record_MLUC_
+-- ((), Just (arg - 12 * num_MLUC_ - 8)){String}: body_MLUC_
+-- arg - 12 * num_MLUC_ - 8{Unicode16BE}: body_MLUC_
+arg - 12 * num_MLUC_ - 8{BS.ByteString}: body_MLUC_
+
+|]
+
+[binary|
+
+MLUC_RECORD2 deriving Show
+
+((), Just 2){String}: lang_MLUC_
+((), Just 2){String}: country_MLUC_
+4: len_MLUC_
+4: offset_MLUC_
+
+|]
