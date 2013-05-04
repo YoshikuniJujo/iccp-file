@@ -6,7 +6,7 @@ module File.Binary.ICCProfile (
 	paddings, sizes,
 	duplicate, fromElems, filePadding, tagTypes,
 
-	MLUC_(..),
+	MLUC2(..),
 	MMOD2(..), Text2(..), Elem(..), Body(..),
 
 	Unicode16BE(..),

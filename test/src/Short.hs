@@ -126,12 +126,12 @@ instance Short MAB_CLUT where
 instance Short Text2 where
 	short t = show $ dotdot 10 10 $ text t
 
-instance Short MLUC_ where
-	short mluc = "MLUC_ " ++
-		show (num_MLUC_ mluc) ++ " " ++
-		show (record_MLUC_ mluc) ++ " " ++
---		dotdot 40 40 (show $ record_MLUC_ mluc) ++ " " ++
-		"(" ++ dotdot 70 70 (show $ body_MLUC_ mluc) ++ ")"
+instance Short MLUC2 where
+	short mluc = "MLUC2 " ++
+		show (num_MLUC2 mluc) ++ " " ++
+		show (record_MLUC2 mluc) ++ " " ++
+--		dotdot 40 40 (show $ record_MLUC2 mluc) ++ " " ++
+		"(" ++ dotdot 70 70 (show $ body_MLUC2 mluc) ++ ")"
 
 instance Short MMOD2 where
 	short mmod = "(MMOD2 " ++
