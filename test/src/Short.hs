@@ -34,27 +34,12 @@ instance Short Elem where
 	short (ElemData dat ) = "ElemData " ++ "(" ++ short dat  ++ ")"
 	short (ElemMFT2 mft2) = "ElemMFT2 " ++ "(" ++ short mft2 ++ ")"
 	short (ElemMAB  mab ) = "ElemMAB "  ++ "(" ++ short mab  ++ ")"
-	short (ElemMBA  mba ) = "ElemMBA "  ++ "(" ++ short mba  ++ ")"
 	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
 	short (ElemMmod mmod) = "ElemMmod " ++ "(" ++ short mmod ++ ")"
 	short (ElemText txt) = "ElemText " ++ "(" ++ short txt ++ ")"
 	short (ElemOthers t b) =
 		"ElemOthers " ++ t ++ "(" ++ dotdot 10 10 (show b) ++ ")"
 	short elm = show elm
-
-instance Short MAB_ where
-	short mab_ = "MAB_ (" ++
-		show i ++ ", " ++
-		show o ++ ", " ++
-		show bs ++ ", " ++
-		show mtrx ++ ", " ++
-		show ms ++ ", " ++
-		show clut ++ ", " ++
-		show as ++ ", " ++
-		dotdot 100 100 (show dat) ++
-		")"
-		where
-		MAB_ i o bs mtrx ms clut as dat = mab_
 
 instance Short Curv where
 	short crv = "Curv " ++ "{" ++
@@ -91,17 +76,6 @@ instance Short MFT2 where
 			", " ++
 		"output_table = " ++ dotdot 10 20 (show $ output_table_mft2 mft2) ++
 		"}"
-
-instance Short MBA where
-	short mab_ = "MBA " ++ "{" ++
-		"bcurvs = " ++ short bcs ++ ", " ++
-		"matrix = " ++ show matrix ++ ", " ++
-		"mcurvs = " ++ short mcs ++ ", " ++
-		"clut = " ++ short clut ++ ", " ++
-		"acurvs = " ++ short acs ++
-		"}"
-		where
-		MBA bcs matrix mcs clut acs = mab_
 
 instance Short MAB where
 	short mab_ = "MAB " ++ "{" ++
