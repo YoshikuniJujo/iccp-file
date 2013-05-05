@@ -21,3 +21,5 @@
 	b_curvs :: ...}
 	のようにするべきだろう。
 9. curvs を curves にしたほうが良いかもしれない
+10. offset による読み込みを、[binary| ... |] のなかにいれる
+11. binary-file で [binary-select| ... |] を作ろう
