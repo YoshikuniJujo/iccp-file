@@ -23,3 +23,13 @@
 9. curvs を curves にしたほうが良いかもしれない
 10. offset による読み込みを、[binary| ... |] のなかにいれる
 11. binary-file で [binary-select| ... |] を作ろう
+12. 10 のためにまずは、モデルを作ろう
+	上記モデルはまず先頭に名前(4文字ASCII)、offset、size のリストを取り、
+	それに続けて実際のデータの領域が続く。
+	また、データの領域の先頭は型名(4文字ASCII) とし、その後に4byte の 0 があり、
+	その後に実際のデータがあるという形とする。
+	4byte 領域となるように padding もする。
+	型はとりあえず asci と wrd8 としよう。
+	前者は String として取り、後者は [Word8] として取る。
+13. File.Binary.Instances.MSB0 と File.Binary.Instances.LSB0 を作ろう。
+	これらは bigendian や littleendian とは独立しているようなので。

@@ -12,7 +12,8 @@ module File.Binary.ICCProfile (
 
 import File.Binary
 import File.Binary.Instances ()
-import File.Binary.Instances.BigEndian (BitsInt)
+import File.Binary.Instances.BigEndian ()
+import File.Binary.Instances.LSB0 (BitsInt)
 import Control.Arrow
 import Control.Monad
 import Data.Monoid
@@ -125,17 +126,17 @@ ICCP deriving Show
 4: "acsp"
 ((), Just 4){String}: target_platform
 2: profile_flags
-14{BitsInt}: 0
 {Bool}: is_embeded
 {Bool}: only_embeded
+14{BitsInt}: 0
 4: device_manufacturer
 4: device_model
 4: device_attributes
-28{BitsInt}: 0
-{Bool}: device_not_color
-{Bool}: device_nega
-{Bool}: device_matte
 {Bool}: device_trans
+{Bool}: device_matte
+{Bool}: device_nega
+{Bool}: device_not_color
+28{BitsInt}: 0
 4: rendering_intent
 {XYZ}: illuminant_value
 ((), Just 4){String}: profile_creator
