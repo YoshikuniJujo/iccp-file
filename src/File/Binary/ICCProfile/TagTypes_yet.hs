@@ -12,10 +12,17 @@ NDIN2 deriving Show
 
 arg :: Int
 
+replicate 9 4{[Int]}: hoge_NDIN2
+replicate 3 4{[Int]}: hage_NDIN2
+replicate 3 2{[Int]}: hige_NDIN2
+replicate ((arg - 58) `div` 2) 2{[Int]}: body_NDIN2
+
+{-
 (4, Just 9){[Int]}: hoge_NDIN2
 (4, Just 3){[Int]}: hage_NDIN2
 (2, Just 3){[Int]}: hige_NDIN2
 (2, Just ((arg - 58) `div` 2)){[Int]}: body_NDIN2
+-}
 
 |]
 
@@ -29,7 +36,7 @@ arg :: Int
 2: hoge_VCGT2
 2: hage_VCGT2
 2: hige_VCGT2
-(1, Just (arg - 10)){[Int]}: body_VCGT2
+replicate (arg - 10) 1{[Int]}: body_VCGT2
 -- (2, Just (arg `div` 2 - 7)){[Int]}: body_VCGT2
 -- {Int}: some
 -- (arg - ((arg `div` 2) * 2)): some
@@ -43,7 +50,7 @@ Text2
 
 arg :: Int
 
-((), Just arg){String}: text
+replicate arg (){String}: text
 
 |]
 
@@ -69,7 +76,7 @@ Desc deriving Show
 
 arg :: Int
 
-((), Just arg){String}: body_desc
+replicate arg (){String}: body_desc
 
 |]
 
@@ -123,7 +130,7 @@ MMOD2
 
 arg :: Int
 
-((), Just arg){String}: body_MMOD2
+replicate arg (){String}: body_MMOD2
 
 |]
 

@@ -66,7 +66,7 @@ Body
 
 arg :: Int
 
-((), Just 4){String}: data_type
+replicate 4 (){String}: data_type
 4: 0
 (data_type, arg - 8){Elem}: data_body
 getPadding $ getSize arg data_body: 0 -- padd
@@ -133,9 +133,9 @@ instance Field Elem where
 		fmap (first ElemVCGT) . fromBinary size
 	fromBinary ("ndin", size) =
 --		fmap (first ElemNDIN) . fromBinary size
-		fmap (first $ ElemOthers "ndin") . fromBinary ((), Just size)
+		fmap (first $ ElemOthers "ndin") . fromBinary (replicate size ())
 	fromBinary (typ, size) =
-		fmap (first $ ElemOthers typ) . fromBinary ((), Just size)
+		fmap (first $ ElemOthers typ) . fromBinary (replicate size ())
 	toBinary (_, size) (ElemCurv dat) = toBinary size dat
 	toBinary (_, size) (ElemData dat) = toBinary size dat
 	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
@@ -150,7 +150,7 @@ instance Field Elem where
 	toBinary (_, size) (ElemPara dat) = toBinary size dat
 	toBinary (_, size) (ElemVCGT dat) = toBinary size dat
 	toBinary (_, size) (ElemNDIN dat) = toBinary size dat
-	toBinary (_, size) (ElemOthers _ dat) = toBinary ((), Just size) dat
+	toBinary (_, size) (ElemOthers _ dat) = toBinary (replicate size ()) dat
 
 [binary|
 
@@ -159,7 +159,7 @@ Curv deriving Show
 arg :: Int
 
 4{UInt32Number_}: num_curv
-(2, Just num_curv){[UInt16Number]}: body_curv
+replicate num_curv 2{[UInt16Number]}: body_curv
 
 |]
 
@@ -179,11 +179,11 @@ data DataBody = BinData [Word8] | ASCIIData String deriving Show
 
 instance Field DataBody where
 	type FieldArgument DataBody = (Int, Int)
-	fromBinary (0, n) b = first ASCIIData <$> fromBinary ((), Just n) b
-	fromBinary (1, n) b = first BinData <$> fromBinary ((), Just n) b
+	fromBinary (0, n) b = first ASCIIData <$> fromBinary (replicate n ()) b
+	fromBinary (1, n) b = first BinData <$> fromBinary (replicate n ()) b
 	fromBinary _ _ = error "bad data type"
-	toBinary (_, n) (ASCIIData ad) = toBinary ((), Just n) ad
-	toBinary (_, n) (BinData bd) = toBinary ((), Just n) bd
+	toBinary (_, n) (ASCIIData ad) = toBinary (replicate n ()) ad
+	toBinary (_, n) (BinData bd) = toBinary (replicate n ()) bd
 
 [binary|
 
@@ -198,9 +198,11 @@ arg :: Int
 {Matrix33}: matrix_mft2
 2{UInt16Number}: input_table_n_mft2
 2{UInt16Number}: output_table_n_mft2
-(2, Just $ input_table_n_mft2 * input_num_mft2){[UInt16Number]}: input_table_mft2
-(2, Just $ clut_num_mft2 ^ input_num_mft2 * output_num_mft2){[UInt16Number]}: clut_table_mft2
-(2, Just $ output_table_n_mft2 * output_num_mft2){[UInt16Number]}: output_table_mft2
+replicate (input_table_n_mft2 * input_num_mft2) 2{[UInt16Number]}: input_table_mft2
+replicate (clut_num_mft2 ^ input_num_mft2 * output_num_mft2) 2{[UInt16Number]}:
+	clut_table_mft2
+replicate (output_table_n_mft2 * output_num_mft2) 2{[UInt16Number]}:
+	output_table_mft2
 
 |]
 
@@ -240,13 +242,13 @@ instance Field MBA where
 
 mbaToMba_ :: (Monad m, Applicative m) => MBA -> m MBA_
 mbaToMba_ mba = do
-	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (bCurvsMba mba)
+	bcurvs <- to4Bytes <$> toBinary (repeat $ error "hoge") (bCurvsMba mba)
 	matrix <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ matrixMba mba
-	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (mCurvsMba mba)
-	clut <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ clutMba mba
-	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (aCurvsMba mba)
+		(fmap to4Bytes . toBinary (error "hage")) $ matrixMba mba
+	mcurvs <- to4Bytes <$> toBinary (repeat $ error "boke") (mCurvsMba mba)
+	clut <- maybe (return "") (fmap to4Bytes . toBinary
+		(length $ bCurvsMba mba, length $ aCurvsMba mba)) $ clutMba mba
+	acurvs <- to4Bytes <$> toBinary (repeat $ error "kasu") (aCurvsMba mba)
 	return MAB_ {
 		b_offset_mab = if null bcurvs then 0 else 32,
 		matrix_offset_mab = if null matrix then 0 else 32 + length bcurvs,
@@ -264,20 +266,20 @@ mbaToMba_ mba = do
 mbaToMba :: (Monad m, Applicative m) => MBA_ -> m MBA
 mbaToMba mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
-	(bcurvs, _) <- fromBinary (undefined, Just $ input_num_mab_ mab_) $
+	(bcurvs, _) <- fromBinary (replicate (input_num_mab_ mab_) (error "take")) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
 	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
 		else first Just <$>
 			fromBinary () (snd $ getBytes (matrix_offset - 32) $
 				body_mab mab_)
 	(mcurvs, _) <- if m_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just $ input_num_mab_ mab_)
+		fromBinary (replicate (input_num_mab_ mab_) undefined)
 			(snd $ getBytes (m_offset_mab mab_ - 32) $ body_mab mab_)
 	(clut, _) <- if clut_offset == 0 then return (Nothing, undefined) else
 		first Just <$> fromBinary (input_num, output_num)
 			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
 	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just output_num)
+		fromBinary (replicate output_num undefined)
 			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
 	return $ MBA bcurvs matrix mcurvs clut acurvs
 	where
@@ -307,13 +309,15 @@ instance Field MAB where
 
 mabToMab_ :: (Monad m, Applicative m) => MAB -> m MAB_
 mabToMab_ mab = do
-	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (bCurvsMab mab)
+	bcurvs <- to4Bytes <$> toBinary (repeat $ error "hokeru") (bCurvsMab mab)
 	matrix <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ matrixMab mab
-	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (mCurvsMab mab)
+		(fmap to4Bytes . toBinary (error "bokeru")) $ matrixMab mab
+	mcurvs <- to4Bytes <$> toBinary (repeat $ error "kokeru") (mCurvsMab mab)
 	clut <- maybe (return "")
-		(fmap to4Bytes . toBinary undefined) $ clutMab mab
-	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (aCurvsMab mab)
+		(fmap to4Bytes . toBinary
+				(length $ aCurvsMab mab, length $ bCurvsMab mab)) $
+			clutMab mab
+	acurvs <- to4Bytes <$> toBinary (repeat $ error "mumumu") (aCurvsMab mab)
 	return MAB_ {
 		b_offset_mab = if null bcurvs then 0 else 32,
 		matrix_offset_mab = if null matrix then 0 else 32 + length bcurvs,
@@ -338,7 +342,7 @@ to4Bytes str
 mabToMab :: (Monad m, Applicative m) => MAB_ -> m MAB
 mabToMab mab_ = do
 --	(ret, _) <- fromBinary (output_num_mab mab_) $
-	(bcurvs, _) <- fromBinary (undefined, Just $ output_num_mab_ mab_) $
+	(bcurvs, _) <- fromBinary (replicate (output_num_mab_ mab_) undefined) $
 		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
 	let	matrix_offset = matrix_offset_mab mab_
 		m_offset = m_offset_mab mab_
@@ -351,13 +355,13 @@ mabToMab mab_ = do
 			fromBinary () (snd $ getBytes (matrix_offset - 32) $
 				body_mab mab_)
 	(mcurvs, _) <- if m_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just $ output_num_mab_ mab_)
+		fromBinary (replicate (output_num_mab_ mab_) undefined)
 			(snd $ getBytes (m_offset_mab mab_ - 32) $ body_mab mab_)
 	(clut, _) <- if clut_offset == 0 then return (Nothing, undefined) else
 		first Just <$> fromBinary (input_num, output_num)
 			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
 	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
-		fromBinary (undefined, Just input_num)
+		fromBinary (replicate input_num undefined)
 			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
 	return $ MAB bcurvs matrix mcurvs clut acurvs
 
@@ -375,7 +379,7 @@ arg :: Int
 4{UInt32Number_}: m_offset_mab
 4{UInt32Number_}: clut_offset_mab
 4{UInt32Number_}: a_offset_mab
-((), Just $ arg - 24){String}: body_mab
+replicate (arg - 24) (){String}: body_mab
 
 |]
 
@@ -385,10 +389,10 @@ MAB_CLUT deriving Show
 
 arg :: (Int, Int)
 
-(1, Just 16){[Int]}: nums_mab_clut
+replicate 16 1{[Int]}: nums_mab_clut
 1: byte_num_mab_clut
 3: 0
-(byte_num_mab_clut, Just $ product (take (fst arg) nums_mab_clut) * snd arg)
+replicate (product (take (fst arg) nums_mab_clut) * snd arg) byte_num_mab_clut
 	{[UInt8Or16Number]}: body_mab_clut
 
 |]
@@ -477,7 +481,7 @@ arg :: Int
 
 4: num_MLUC_
 4: 12
-((), Just num_MLUC_){[MLUC_RECORD2]}: record_MLUC_
+replicate num_MLUC_ (){[MLUC_RECORD2]}: record_MLUC_
 -- ((), Just (arg - 12 * num_MLUC_ - 8)){String}: body_MLUC_
 -- arg - 12 * num_MLUC_ - 8{Unicode16BE}: body_MLUC_
 arg - 12 * num_MLUC_ - 8{BS.ByteString}: body_MLUC_
@@ -488,8 +492,8 @@ arg - 12 * num_MLUC_ - 8{BS.ByteString}: body_MLUC_
 
 MLUC_RECORD2 deriving Show
 
-((), Just 2){String}: lang_MLUC_
-((), Just 2){String}: country_MLUC_
+replicate 2 (){String}: lang_MLUC_
+replicate 2 (){String}: country_MLUC_
 4: len_MLUC_
 4: offset_MLUC_
 

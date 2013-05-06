@@ -106,7 +106,7 @@ getTagTypeName (Tag _ offset _) = fmap fst . fromBinary () . snd . getBytes offs
 
 TagType deriving Show
 
-((), Just 4){String}: tag_type_name
+replicate 4 (){String}: tag_type_name
 
 |]
 
@@ -115,16 +115,16 @@ TagType deriving Show
 ICCP deriving Show
 
 4: profile_size
-((), Just 4){String}: cmm_type
+replicate 4 (){String}: cmm_type
 1: profile_version_major
 1: profile_version_minor
 2: 0
-((), Just 4){String}: profile_device_class
-((), Just 4){String}: color_space_of_data
-((), Just 4){String}: profile_connection_space
+replicate 4 (){String}: profile_device_class
+replicate 4 (){String}: color_space_of_data
+replicate 4 (){String}: profile_connection_space
 {UTCTime}: create_time
 4: "acsp"
-((), Just 4){String}: target_platform
+replicate 4 (){String}: target_platform
 2: profile_flags
 {Bool}: is_embeded
 {Bool}: only_embeded
@@ -139,11 +139,11 @@ ICCP deriving Show
 28{BitsInt}: 0
 4: rendering_intent
 {XYZ}: illuminant_value
-((), Just 4){String}: profile_creator
-((), Just 16){String}: profile_identifier
+replicate 4 (){String}: profile_creator
+replicate 16 (){String}: profile_identifier
 28{Integer}: 0
 4: tag_count
-((), Just tag_count){[Tag]}: tags
+replicate tag_count (){[Tag]}: tags
 
 |]
 
@@ -187,7 +187,7 @@ Time deriving Show
 
 Tag deriving Show
 
-((), Just 4){String}: tag_signature
+replicate 4 (){String}: tag_signature
 4: tag_data_offset
 4: tag_element_size
 
