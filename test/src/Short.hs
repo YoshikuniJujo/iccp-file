@@ -25,8 +25,37 @@ instance Short a => Short (String, a) where
 	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
 instance Short ICCP where
-	short iccp = dotdot 100 100 (show iccp) ++ " (" ++
-		short (bodys iccp) ++ ")"
+	short iccp ="ICCP {" ++
+		"size = " ++ show size ++ ", " ++
+		"type = " ++ show typ ++ ", " ++
+		"version = " ++ show vmajor ++ "." ++ show vminor ++ ", " ++
+		"device_class = " ++ show dev_class ++ ", " ++
+		"color_space = " ++ show clrspace ++ ", " ++
+		"connection_space = " ++ show cnspace ++ ", " ++
+		"create_time = " ++ show ctime ++ ", " ++
+		"target_platform = " ++ show tplat ++ ", " ++
+		"flags = " ++ show pflags ++ ", " ++
+		"is_embeded = " ++ show iembed ++ ", " ++
+		"only_embeded = " ++ show oembed ++ ", " ++
+		"device_manufacturer = " ++ show dmanu ++ ", " ++
+		"device_model = " ++ show dmod ++ ", " ++
+		"device_attributes = " ++ show dattr ++ ", " ++
+		"device_trans = " ++ show dtran ++ ", " ++
+		"device_matte = " ++ show dmatt ++ ", " ++
+		"device_nega = " ++ show dneg ++ ", " ++
+		"device_not_color = " ++ show dnc ++ ", " ++
+		"rendering_intent = " ++ show ri ++ ", " ++
+		"illuminant_value = " ++ show iv ++ ", " ++
+		"profile_creator = " ++ show pc ++ ", " ++
+		"profile_identifier = " ++ show pint ++ ", " ++
+		"tag_count = " ++ show tc ++ ", " ++
+		"tags = " ++ show ts ++ ", " ++
+		"bodys = " ++ short bs ++
+		"}"
+		where
+		ICCP size typ vmajor vminor dev_class clrspace cnspace ctime tplat
+			pflags iembed oembed dmanu dmod dattr dtran dmatt dneg dnc
+			ri iv pc pint tc ts bs = iccp
 
 instance Short Body where
 	short dat = "Body " ++
@@ -42,6 +71,7 @@ instance Short Elem where
 	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
 	short (ElemMmod mmod) = "ElemMmod " ++ "(" ++ short mmod ++ ")"
 	short (ElemText txt) = "ElemText " ++ "(" ++ short txt ++ ")"
+	short (ElemVCGT vcgt) = "ElemVCGT " ++ "(" ++ dotdot 100 100 (show vcgt) ++ ")"
 	short (ElemOthers t b) =
 		"ElemOthers " ++ t ++ "(" ++ dotdot 10 10 (show b) ++ ")"
 	short elm = show elm

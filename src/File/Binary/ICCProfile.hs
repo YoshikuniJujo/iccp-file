@@ -1,80 +1,21 @@
 {-# LANGUAGE QuasiQuotes, TypeFamilies, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module File.Binary.ICCProfile (
-	ICCP(..), Tag(..), readICCP, writeICCP,
-	paddings, sizes,
-	duplicate, fromElems, filePadding, tagTypes,
-
-	MLUC_Pre(..),
-	MMOD2(..), Text2(..), Elem(..), Body(..),
-
-	sortTags
-) where
+module File.Binary.ICCProfile (ICCP(..)) where
 
 import File.Binary
 import File.Binary.Instances ()
 import File.Binary.Instances.BigEndian ()
 import File.Binary.Instances.LSB0 (BitsInt)
 import Control.Arrow
-import Control.Monad
-import Data.Monoid
 import Data.Time
 import Data.Function
 import Data.List
-import Control.Applicative
 
 import File.Binary.ICCProfile.TagTypes
 
-type ICCPData = (ICCP, [Element])
-
-readICCP :: (Monad m, Applicative m, Binary b) => b -> m ICCPData
-readICCP bin = do
-	(ret, _) <- fromBinary () bin
-	elems <- mapM (($ bin) . getElement') $ tags ret
-	return (ret, elems)
-
-tagTypes :: (Monad m, Applicative m, Binary b) => b -> m [String]
-tagTypes bin = do
-	(ret, _) <- fromBinary () bin
-	tts <- mapM (($ bin) . getTagTypeName) $ tags ret
-	return $ map tag_type_name tts
-
--- writeICCP :: (Monad m, Applicative m, Binary b) => ICCPData -> m b
--- writeICCP :: ICCPData -> IO String
-writeICCP :: (Monad m, Applicative m) => ICCPData -> m String
-writeICCP (ret, elems) = do
-	let	dups = duplicate [] (tags ret)
---		pads = paddings (deleteIndexes dups $ tags ret) ++ [0]
-		noDupTags = deleteIndexes dups (tags ret)
-	bin <- toBinary () ret
---	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
-	bins <- zipWithM (\size dat -> toBinary ([], size) $ snd dat)
-		(map tag_element_size noDupTags) $
-			deleteIndexes dups elems
---	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
---	let	bins' = zipWith addPadding bins pads
-	let	bins' = bins
-	return $ mconcat (bin : bins') -- ++ replicate (filePadding ret) '\0'
-
-filePadding :: ICCP -> Int
-filePadding iccp = profile_size iccp -
-	(tag_data_offset lastTag + tag_element_size lastTag)
-	where
-	lastTag = last $ tags iccp
-
-fromElems :: (Monad m, Applicative m) => [Element] -> m [String]
-fromElems = mapM $ toBinary undefined . snd
-
-{-
-addPadding :: String -> Int -> String
-addPadding d p
-	| p >= 0 = d `mappend` replicate p '\0'
-	| otherwise = take (length d + p) d
--}
-
 sortTags :: [Tag] -> [([String], Int)]
-sortTags tags = unifyTags [] undefined undefined $ sortBy compareOffset tags
+sortTags ts = unifyTags [] undefined undefined $ sortBy compareOffset ts
 	where
 	compareOffset = on compare tag_data_offset
 
@@ -92,39 +33,6 @@ unifyTags bs ofst sz (t : ts)
 padd :: Int -> Int
 padd n	| n `mod` 4 == 0 = 0
 	| otherwise = 4 - n `mod` 4
-
-paddings :: [Tag] -> [Int]
-paddings [] = error "bad"
-paddings [_] = []
-paddings (t0 : t1 : ts) =
-	tag_data_offset t1 - tag_data_offset t0 - tag_element_size t0 :
-	paddings (t1 : ts)
-
-deleteIndexes :: [Int] -> [a] -> [a]
-deleteIndexes [] xs = xs
-deleteIndexes (n : ns) xs =
-	take n xs ++ deleteIndexes (map (subtract (n + 1)) ns) (drop (n + 1) xs)
-
-duplicate :: [Tag] -> [Tag] -> [Int]
-duplicate _ [] = []
-duplicate pre (t : post)
-	| any (sameOffsetSize t) pre = length pre : duplicate (t : pre) post
-	| otherwise = duplicate (t : pre) post
-
-sameOffsetSize :: Tag -> Tag -> Bool
-sameOffsetSize (Tag _ offset1 size1) (Tag _ offset2 size2) =
-	offset1 == offset2 && size1 == size2
-
-sizes :: [Tag] -> [Int]
-sizes = map tag_element_size
-
-getElement' :: (Monad m, Applicative m, Binary b) => Tag -> b -> m Element
-getElement' t@(Tag tn _ _) str = do
-	(d, _) <- getData t str
-	return $ edata tn d
-
-getTagTypeName :: (Monad m, Applicative m, Binary b) => Tag -> b -> m TagType
-getTagTypeName (Tag _ offset _) = fmap fst . fromBinary () . snd . getBytes offset
 
 [binary|
 
@@ -217,11 +125,3 @@ replicate 4 (){String}: tag_signature
 4: tag_element_size
 
 |]
-
-edata :: String -> Body -> Element
-edata = (,)
-
-type Element = (String, Body)
-
-getData :: (Monad m, Applicative m, Binary b) => Tag -> b -> m (Body, b)
-getData (Tag _ offset size) = fromBinary ([], size) . snd . getBytes offset
