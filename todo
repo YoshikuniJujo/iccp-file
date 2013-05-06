@@ -31,13 +31,12 @@
 	4byte 領域となるように padding もする。
 	型はとりあえず asci と wrd8 としよう。
 	前者は String として取り、後者は [Word8] として取る。
-13. File.Binary.Instances.MSB0 と File.Binary.Instances.LSB0 を作ろう。
-	これらは bigendian や littleendian とは独立しているようなので。
-14. [a] の FieldArgument は [arg] にしたほうがいいのかもしれない。
-	ただ、足りなかった場合に error が出せないのが問題。
-	そこは ([arg], Bool) で足りなかった場合に error を出すかどうか決めるのが
-	良いかと。
-	あるいは足りなかったときには error を出さないでスルーするのもありか。
-	そうすると今まで ((), Just n) と書いていた部分は replicate n () となる。
-	また、((), Nothing) と書いていた部分は repeat () となるだろう。
-15. 上記の変更はわりと大幅な変更になるな。
+	同じデータを別のデータとして読み書きできるようにするために、
+	また、データの並びとタグの並びとを独立させるために、
+	sort して nubBy で offset の共通しているものを消す。
+	nubBy だとたとえば size が違った場合に問題が出る。
+	しかし offset が同じで size が違うというのはちょっとやりすぎ感がある。
+	だから offset が同じで size が同じ場合のみを考慮し、
+	それ以外で領域に重なりまたはすきまがある場合は error とする。
+	つまり、offset で sort した常態で check をしよう。
+	4 byte padding を考慮したうえで offset が連続している場合のみを許す。

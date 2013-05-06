@@ -130,3 +130,39 @@ n 次元配列的なものを Haskell ではどう書けるか。
 
 ひとつ考えられるのは木構造にすることか。
 深さを統一することはできないだろうか。
+
+2013.05.06 Mon.
+
+たとえば本気で同じものをまとめたいと考えたとすると、
+data Data = Raw RawData | Index Int
+のような形にする必要があるだろう。
+ただこれだと Index Int が [Data] の収納のしかたに左右されてしまうので美しくない。
+とすると [] の代用となる MyList を作り、以下のようにするべきか。
+data MyList a = Cons a (MList a) | Cons Int (MyList a) | Empty
+このようにしておき Int が後ろを参照するようにしておけば
+本質的なところでは問題ないはず。
+まあ、ここまでやるかどうかは別の話。
+あるいは [Data] を参照する [Int] を作っておくというのもひとつの手だな。
+newtype で index であることを明示したほうがいいかもしれないが。
+
+zip して sort して unzip がいいように思うな。
+sort したら size と内容が同じであることを確認。
+
+offset が同じものを見つける。
+size と内容が同じであることを check そうでなければ error
+そして、どちらかを消す。
+filter と all を使う。
+
+[Tag] -> [([String], size)] のように変換するべきかもしれない。
+sort してから、Ref Tag に変換してからやるといいかも。
+ただ sort したあとなら Ref Tag よりも簡単にできるはずだな。
+このときにちゃんと padding も含めて、tag が正しいかどうか確認する。
+正しくなければ error 。
+本番では fail を使おうかな。
+すると、Data は Data (Signature [String]) String のようにできるだろう。
+
+instance Field Signature where
+	fromBinary name bs = (Signature name, bs)
+	toBinary _ _ = mempty
+
+のような感じにしておけば良いだろう。
