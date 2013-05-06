@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, EmptyDataDecls, PatternGuards #-}
 
 module File.Binary.ICCProfile.TagTypes (
 	Body(..),
@@ -6,6 +6,7 @@ module File.Binary.ICCProfile.TagTypes (
 	Curv(..),
 	Data(..),
 	MFT2(..),
+	MBA(..),
 	MAB(..),
 	MAB_(..),
 	MAB_CLUT(..),
@@ -89,6 +90,7 @@ data Elem
 	| ElemData Data
 	| ElemMFT2 MFT2
 	| ElemMAB  MAB
+	| ElemMBA  MBA
 	| ElemText Text2
 	| ElemXYZ XYZ2
 	| ElemDesc Desc
@@ -111,6 +113,8 @@ instance Field Elem where
 		fmap (first ElemMFT2) . fromBinary size
 	fromBinary ("mAB ", size) =
 		fmap (first ElemMAB ) . fromBinary size
+	fromBinary ("mBA ", size) =
+		fmap (first ElemMBA ) . fromBinary size
 	fromBinary ("XYZ ", size) =
 		fmap (first ElemXYZ) . fromBinary size
 	fromBinary ("sf32", size) =
@@ -136,6 +140,7 @@ instance Field Elem where
 	toBinary (_, size) (ElemData dat) = toBinary size dat
 	toBinary (_, size) (ElemMFT2 dat) = toBinary size dat
 	toBinary (_, size) (ElemMAB  dat) = toBinary size dat
+	toBinary (_, size) (ElemMBA  dat) = toBinary size dat
 	toBinary (_, size) (ElemXYZ dat) = toBinary size dat
 	toBinary (_, size) (ElemChad dat) = toBinary size dat
 	toBinary (_, size) (ElemText dat) = toBinary size dat
@@ -214,6 +219,74 @@ Matrix33 deriving Show
 {S15Fixed16Number}: e9_matrix33
 
 |]
+
+type MBA_ = MAB_
+
+data MBA = MBA {
+	bCurvsMba :: [Body],
+	matrixMba :: Maybe Matrix33,
+	mCurvsMba :: [Body],
+	clutMba :: Maybe MAB_CLUT,
+	aCurvsMba :: [Body]
+ } deriving Show
+
+instance Field MBA where
+	type FieldArgument MBA = Int
+	fromBinary n bin = do
+		(ret, rest) <- fromBinary n bin
+		ret' <- mbaToMba ret
+		return (ret', rest)
+	toBinary n mba = toBinary n =<< mbaToMba_ mba
+
+mbaToMba_ :: (Monad m, Applicative m) => MBA -> m MBA_
+mbaToMba_ mba = do
+	bcurvs <- to4Bytes <$> toBinary (undefined, undefined) (bCurvsMba mba)
+	matrix <- maybe (return "")
+		(fmap to4Bytes . toBinary undefined) $ matrixMba mba
+	mcurvs <- to4Bytes <$> toBinary (undefined, undefined) (mCurvsMba mba)
+	clut <- maybe (return "")
+		(fmap to4Bytes . toBinary undefined) $ clutMba mba
+	acurvs <- to4Bytes <$> toBinary (undefined, undefined) (aCurvsMba mba)
+	return MAB_ {
+		b_offset_mab = if null bcurvs then 0 else 32,
+		matrix_offset_mab = if null matrix then 0 else 32 + length bcurvs,
+		m_offset_mab = if null mcurvs then 0 else 32 + length bcurvs +
+			length matrix,
+		clut_offset_mab = if null clut then 0 else 32 + length bcurvs +
+			length matrix + length mcurvs,
+		a_offset_mab = if null acurvs then 0 else 32 + length bcurvs +
+			length matrix + length mcurvs + length clut,
+		input_num_mab_ = length $ bCurvsMba mba,
+		output_num_mab_ = length $ aCurvsMba mba,
+		body_mab = bcurvs ++ matrix ++ mcurvs ++ clut ++ acurvs
+	 }
+
+mbaToMba :: (Monad m, Applicative m) => MBA_ -> m MBA
+mbaToMba mab_ = do
+--	(ret, _) <- fromBinary (output_num_mab mab_) $
+	(bcurvs, _) <- fromBinary (undefined, Just $ input_num_mab_ mab_) $
+		snd $ getBytes (b_offset_mab mab_ - 32) $ body_mab mab_
+	(matrix, _) <- if matrix_offset == 0 then return (Nothing, undefined)
+		else first Just <$>
+			fromBinary () (snd $ getBytes (matrix_offset - 32) $
+				body_mab mab_)
+	(mcurvs, _) <- if m_offset == 0 then return ([], undefined) else
+		fromBinary (undefined, Just $ input_num_mab_ mab_)
+			(snd $ getBytes (m_offset_mab mab_ - 32) $ body_mab mab_)
+	(clut, _) <- if clut_offset == 0 then return (Nothing, undefined) else
+		first Just <$> fromBinary (input_num, output_num)
+			(snd $ getBytes (clut_offset - 32) $ body_mab mab_)
+	(acurvs, _) <- if a_offset == 0 then return ([], undefined) else
+		fromBinary (undefined, Just output_num)
+			(snd $ getBytes (a_offset - 32) $ body_mab mab_)
+	return $ MBA bcurvs matrix mcurvs clut acurvs
+	where
+	matrix_offset = matrix_offset_mab mab_
+	m_offset = m_offset_mab mab_
+	clut_offset = clut_offset_mab mab_
+	input_num = input_num_mab_ mab_
+	output_num = output_num_mab_ mab_
+	a_offset = a_offset_mab mab_
 
 data MAB = MAB {
 --	mab__mab :: MAB_,

@@ -37,5 +37,5 @@ public = [
 
 implemented :: [String]
 implemented = [
-	"curv", "data", "mft2", "mAB ", "mluc"
+	"curv", "data", "mft2", "mAB ", "mBA ", "mluc"
  ]

@@ -34,6 +34,7 @@ instance Short Elem where
 	short (ElemData dat ) = "ElemData " ++ "(" ++ short dat  ++ ")"
 	short (ElemMFT2 mft2) = "ElemMFT2 " ++ "(" ++ short mft2 ++ ")"
 	short (ElemMAB  mab ) = "ElemMAB "  ++ "(" ++ short mab  ++ ")"
+	short (ElemMBA  mba ) = "ElemMBA "  ++ "(" ++ short mba  ++ ")"
 	short (ElemMluc mluc) = "ElemMluc " ++ "(" ++ short mluc ++ ")"
 	short (ElemMmod mmod) = "ElemMmod " ++ "(" ++ short mmod ++ ")"
 	short (ElemText txt) = "ElemText " ++ "(" ++ short txt ++ ")"
@@ -87,6 +88,17 @@ instance Short MAB where
 		"}"
 		where
 		MAB bcs matrix mcs clut acs = mab_
+
+instance Short MBA where
+	short mba_ = "MBA " ++ "{" ++
+		"bcurvs = " ++ short bcs ++ ", " ++
+		"matrix = " ++ show matrix ++ ", " ++
+		"mcurvs = " ++ short mcs ++ ", " ++
+		"clut = " ++ short clut ++ ", " ++
+		"acurvs = " ++ short acs ++
+		"}"
+		where
+		MBA bcs matrix mcs clut acs = mba_
 
 instance Short MAB_CLUT where
 	short mc = "MAB_CLUT{" ++
