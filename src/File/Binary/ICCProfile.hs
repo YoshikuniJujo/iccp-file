@@ -7,7 +7,9 @@ module File.Binary.ICCProfile (
 	duplicate, fromElems, filePadding, tagTypes,
 
 	MLUC_Pre(..),
-	MMOD2(..), Text2(..), Elem(..), Body(..)
+	MMOD2(..), Text2(..), Elem(..), Body(..),
+
+	sortTags
 ) where
 
 import File.Binary
@@ -18,6 +20,8 @@ import Control.Arrow
 import Control.Monad
 import Data.Monoid
 import Data.Time
+import Data.Function
+import Data.List
 import Control.Applicative
 
 import File.Binary.ICCProfile.TagTypes
@@ -45,7 +49,7 @@ writeICCP (ret, elems) = do
 		noDupTags = deleteIndexes dups (tags ret)
 	bin <- toBinary () ret
 --	bins <- mapM (toBinary (error "bad values") . snd) $ deleteIndexes dups elems
-	bins <- zipWithM (\size dat -> toBinary size $ snd dat)
+	bins <- zipWithM (\size dat -> toBinary ([], size) $ snd dat)
 		(map tag_element_size noDupTags) $
 			deleteIndexes dups elems
 --	let bins' = zipWith (\d p -> d `mappend` replicate p '\0') bins pads
@@ -68,6 +72,26 @@ addPadding d p
 	| p >= 0 = d `mappend` replicate p '\0'
 	| otherwise = take (length d + p) d
 -}
+
+sortTags :: [Tag] -> [([String], Int)]
+sortTags tags = unifyTags [] undefined undefined $ sortBy compareOffset tags
+	where
+	compareOffset = on compare tag_data_offset
+
+unifyTags :: [String] -> Int -> Int -> [Tag] -> [([String], Int)]
+unifyTags [] _ _ (t : ts) =
+	unifyTags [tag_signature t] (tag_data_offset t) (tag_element_size t) ts
+unifyTags bs _ sz [] = [(reverse bs, sz)]
+unifyTags bs ofst sz (t : ts)
+	| tag_data_offset t == ofst && tag_element_size t == sz =
+		unifyTags (tag_signature t : bs) ofst sz ts
+	| ofst + sz + padd sz == tag_data_offset t = (reverse bs, sz) : unifyTags
+		[tag_signature t] (tag_data_offset t) (tag_element_size t) ts
+	| otherwise = error "bad"
+
+padd :: Int -> Int
+padd n	| n `mod` 4 == 0 = 0
+	| otherwise = 4 - n `mod` 4
 
 paddings :: [Tag] -> [Int]
 paddings [] = error "bad"
@@ -144,6 +168,7 @@ replicate 16 (){String}: profile_identifier
 28{Integer}: 0
 4: tag_count
 replicate tag_count (){[Tag]}: tags
+sortTags tags{[Body]}: bodys
 
 |]
 
@@ -199,4 +224,4 @@ edata = (,)
 type Element = (String, Body)
 
 getData :: (Monad m, Applicative m, Binary b) => Tag -> b -> m (Body, b)
-getData (Tag _ offset size) = fromBinary size . snd . getBytes offset
+getData (Tag _ offset size) = fromBinary ([], size) . snd . getBytes offset

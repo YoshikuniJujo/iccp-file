@@ -24,6 +24,10 @@ instance Short a => Short (Maybe a) where
 instance Short a => Short (String, a) where
 	short (s, y) = "(" ++ s ++ ", " ++ short y ++ ")"
 
+instance Short ICCP where
+	short iccp = dotdot 100 100 (show iccp) ++ " (" ++
+		short (bodys iccp) ++ ")"
+
 instance Short Body where
 	short dat = "Body " ++
 --		show (padd dat) ++ " " ++

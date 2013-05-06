@@ -64,12 +64,12 @@ getPadding n
 
 Body
 
-arg :: Int
+arg :: ([String], Int)
 
 replicate 4 (){String}: data_type
 4: 0
-(data_type, arg - 8){Elem}: data_body
-getPadding $ getSize arg data_body: 0 -- padd
+(data_type, snd arg - 8){Elem}: data_body
+getPadding $ getSize (snd arg) data_body: 0 -- padd
 
 |]
 

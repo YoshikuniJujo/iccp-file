@@ -69,6 +69,7 @@ reading flags fpin fpout = do
 --	putStrLn $ take 1000 $ drop 29100 $ show bin
 --	putStrLn $ take 1000 $ drop 30000 $ show cnt
 --	putStrLn $ take 1000 $ drop 30000 $ show bin
+	print fpin
 	print $ paddings $ tags ret
 	print $ duplicate [] $ tags ret
 	print $ map tag_element_size $ tags ret
